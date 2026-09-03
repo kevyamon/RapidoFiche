@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { HardDriveDownload, Bookmark, Sparkles, AlertCircle } from 'lucide-react';
+import { HardDriveDownload, Bookmark, CreditCard, AlertCircle } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { offlineStorage } from '../services/offline.storage';
 import { useAuth } from '../context/AuthContext';
@@ -184,7 +184,7 @@ export const LessonDetailPage: React.FC = () => {
               variant="secondary"
               size="sm"
               onClick={openPayModal}
-              leftIcon={<Sparkles className="w-4 h-4" />}
+              leftIcon={<CreditCard className="w-4 h-4" />}
             >
               Activer (200 FCFA)
             </Button>

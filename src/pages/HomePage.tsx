@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, Sparkles, Clock, ArrowRight, Layers, ShieldCheck } from 'lucide-react';
+import { BookOpen, Clock, ArrowRight, Layers, CreditCard } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSubscription } from '../context/SubscriptionContext';
 import { apiClient } from '../api/client';
@@ -25,8 +25,10 @@ export const HomePage: React.FC = () => {
 
   const levelCode =
     typeof user?.primaryLevelId === 'object'
-      ? user.primaryLevelId.code
-      : 'Classe';
+      ? user.primaryLevelId?.label
+        ? `${user.primaryLevelId.label} (${user.primaryLevelId.code})`
+        : user.primaryLevelId.code
+      : user?.primaryLevelId || 'Votre Classe';
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -42,10 +44,8 @@ export const HomePage: React.FC = () => {
         }
 
         if (historyRes.data?.success) {
-          const items = historyRes.data.data.map(
-            (h: { lessonId: LessonSummary }) => h.lessonId
-          );
-          setRecentLessons(items.filter(Boolean));
+          const lessons = historyRes.data.data.map((h: any) => h.lessonId);
+          setRecentLessons(lessons.filter(Boolean));
         }
       } catch {
         // Mode silencieux pour le chargement partiel
@@ -61,13 +61,12 @@ export const HomePage: React.FC = () => {
 
   return (
     <div className="space-y-6 sm:space-y-8 animate-fade-in">
-      {/* 1. Bannière d'Accueil Enseignant */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary-900 via-primary-800 to-primary-700 text-text-inverse p-5 sm:p-7 shadow-elevated">
+      {/* 1. Bannière d'Accueil Enseignant Épurée et Professionnelle */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary-900 via-primary-800 to-primary-700 text-text-inverse p-6 sm:p-8 shadow-elevated">
         <div className="relative z-10 max-w-2xl">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-primary-800/80 border border-primary-600/50 mb-3">
-            <ShieldCheck className="w-3.5 h-3.5 text-secondary-400" />
-            <span>Programme Officiel • Classe de {levelCode}</span>
-          </div>
+          <p className="text-xs font-semibold text-primary-200 tracking-wider uppercase mb-2">
+            Programme Officiel National • {levelCode}
+          </p>
 
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight">
             Bonjour, {user?.firstName} {user?.lastName}
@@ -89,9 +88,9 @@ export const HomePage: React.FC = () => {
             {!isSubActive && (
               <button
                 onClick={openPayModal}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-white/10 hover:bg-white/20 text-white transition-colors"
+                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-white/10 hover:bg-white/20 text-white transition-colors"
               >
-                <Sparkles className="w-3.5 h-3.5 text-secondary-300" />
+                <CreditCard className="w-4 h-4 text-secondary-300" />
                 <span>Activer l'accès illimité (200 FCFA)</span>
               </button>
             )}

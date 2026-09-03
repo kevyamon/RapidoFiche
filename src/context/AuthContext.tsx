@@ -47,8 +47,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const refreshProfile = useCallback(async () => {
     try {
       const response = await apiClient.get('/auth/me');
-      if (response.data?.success && response.data?.data?.user) {
-        const freshUser = response.data.data.user;
+      if (response.data?.success && response.data?.data) {
+        const freshUser = response.data.data.user || response.data.data;
         setUser(freshUser);
         localStorage.setItem('rapidofiche_user', JSON.stringify(freshUser));
       }
@@ -83,13 +83,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     const response = await apiClient.post('/auth/login', { email, password });
     const resData = response.data.data;
-    const loggedUser = resData.user;
+    const loggedUser = resData.user || resData;
     const token = resData.accessToken || resData.tokens?.accessToken;
     if (token) {
       localStorage.setItem('rapidofiche_access_token', token);
     }
     localStorage.setItem('rapidofiche_user', JSON.stringify(loggedUser));
     setUser(loggedUser);
+    await refreshProfile();
   };
 
   const register = async (data: {
@@ -102,25 +103,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }) => {
     const response = await apiClient.post('/auth/register', data);
     const resData = response.data.data;
-    const registeredUser = resData.user;
+    const registeredUser = resData.user || resData;
     const token = resData.accessToken || resData.tokens?.accessToken;
     if (token) {
       localStorage.setItem('rapidofiche_access_token', token);
     }
     localStorage.setItem('rapidofiche_user', JSON.stringify(registeredUser));
     setUser(registeredUser);
+    await refreshProfile();
   };
 
   const loginWithGoogle = async (idToken: string, primaryLevelId?: string) => {
     const response = await apiClient.post('/auth/google', { idToken, primaryLevelId });
     const resData = response.data.data;
-    const loggedUser = resData.user;
+    const loggedUser = resData.user || resData;
     const token = resData.accessToken || resData.tokens?.accessToken;
     if (token) {
       localStorage.setItem('rapidofiche_access_token', token);
     }
     localStorage.setItem('rapidofiche_user', JSON.stringify(loggedUser));
     setUser(loggedUser);
+    await refreshProfile();
   };
 
   const logout = async () => {

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { BookOpen, Sparkles, LogOut, User as UserIcon, Shield, ChevronDown } from 'lucide-react';
+import { LogOut, User as UserIcon, Shield, ChevronDown, CreditCard } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useSubscription } from '../../context/SubscriptionContext';
 
@@ -12,8 +12,10 @@ export const Navbar: React.FC = () => {
 
   const levelLabel =
     typeof user?.primaryLevelId === 'object'
-      ? user.primaryLevelId.code
-      : 'Enseignant';
+      ? user.primaryLevelId.label
+        ? `${user.primaryLevelId.label} (${user.primaryLevelId.code})`
+        : user.primaryLevelId.code
+      : user?.primaryLevelId || 'Enseignant';
 
   const isSubActive = subscription?.status === 'ACTIVE';
 
@@ -44,24 +46,29 @@ export const Navbar: React.FC = () => {
 
         {/* Espace Central / Indicateurs Enseignant */}
         {user && (
-          <div className="flex items-center gap-2 sm:gap-3">
-            {/* Badge Niveau */}
-            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-primary-50 text-primary-700 border border-primary-200">
-              Classe : {levelLabel}
-            </span>
+          <div className="flex items-center gap-3 sm:gap-4">
+            {/* Classe de l'Enseignant Épurée (Sans Bulle) */}
+            <div className="hidden sm:flex flex-col text-right pr-3 border-r border-border-default">
+              <span className="text-[10px] text-text-muted font-medium uppercase tracking-wider">
+                Niveau Enseigné
+              </span>
+              <span className="text-xs font-bold text-primary-700">
+                {levelLabel}
+              </span>
+            </div>
 
-            {/* Badge Abonnement */}
+            {/* Statut Abonnement */}
             {isSubActive ? (
-              <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-subscription-activeBg text-subscription-activeText border border-subscription-activeBorder">
+              <span className="text-xs font-semibold text-status-success-text flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-status-success-badge animate-pulse" />
-                Abonnement Actif ({subscription?.daysRemaining}j)
+                <span>Actif ({subscription?.daysRemaining}j)</span>
               </span>
             ) : (
               <button
                 onClick={openPayModal}
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold bg-secondary-600 hover:bg-secondary-700 text-text-inverse shadow-subtle transition-all active:scale-95"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-secondary-600 hover:bg-secondary-700 text-text-inverse shadow-subtle transition-all active:scale-95"
               >
-                <Sparkles className="w-3.5 h-3.5" />
+                <CreditCard className="w-3.5 h-3.5" />
                 <span>Activer (200 F)</span>
               </button>
             )}
