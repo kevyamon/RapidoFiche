@@ -3,9 +3,17 @@
 @tailwind utilities;
 
 @layer base {
-  body {
+  html, body {
     @apply bg-background-main text-text-primary antialiased font-sans;
     -webkit-tap-highlight-color: transparent;
+    overflow-x: hidden;
+    max-width: 100%;
+  }
+
+  #root {
+    overflow-x: hidden;
+    max-width: 100%;
+    min-height: 100vh;
   }
 }
 

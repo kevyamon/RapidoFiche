@@ -33,7 +33,7 @@ export const OfflineLessonsPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in w-full max-w-full overflow-hidden">
       {/* En-tête */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
@@ -46,7 +46,7 @@ export const OfflineLessonsPage: React.FC = () => {
           </p>
         </div>
 
-        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-primary-50 text-primary-700 border border-primary-200 self-start sm:self-auto">
+        <span className="text-xs font-medium text-text-muted self-start sm:self-auto">
           {savedLessons.length} fiche(s) disponible(s)
         </span>
       </div>

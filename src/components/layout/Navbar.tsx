@@ -1,6 +1,16 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { LogOut, User as UserIcon, Shield, ChevronDown, CreditCard } from 'lucide-react';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
+import {
+  Home,
+  BookOpen,
+  Bookmark,
+  HardDriveDownload,
+  Shield,
+  CreditCard,
+  ChevronDown,
+  LogOut,
+  User as UserIcon,
+} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useSubscription } from '../../context/SubscriptionContext';
 
@@ -24,18 +34,25 @@ export const Navbar: React.FC = () => {
     navigate('/connexion');
   };
 
+  const navLinks = [
+    { to: '/', label: 'Accueil', icon: Home },
+    { to: '/fiches', label: 'Fiches Pédagogiques', icon: BookOpen },
+    { to: '/favoris', label: 'Favoris', icon: Bookmark },
+    { to: '/hors-ligne', label: 'Espace Hors-Ligne', icon: HardDriveDownload },
+  ];
+
   return (
     <header className="sticky top-0 z-40 bg-background-card/95 backdrop-blur-md border-b border-border-default shadow-subtle">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        {/* Logo & Marque */}
-        <Link to="/" className="flex items-center gap-2.5 focus:outline-none">
+        {/* 1. Logo & Marque RapidoFiche */}
+        <Link to="/" className="flex items-center gap-2.5 focus:outline-none shrink-0">
           <img
             src="/logo.png"
             alt="Logo RapidoFiche"
-            className="w-10 h-10 rounded-xl object-cover shadow-card shrink-0"
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl object-cover shadow-card shrink-0"
           />
           <div className="flex flex-col">
-            <span className="font-bold text-lg text-primary-900 tracking-tight leading-tight">
+            <span className="font-bold text-base sm:text-lg text-primary-900 tracking-tight leading-tight">
               Rapido<span className="text-secondary-600">Fiche</span>
             </span>
             <span className="text-[10px] text-text-muted font-medium uppercase tracking-wider">
@@ -44,20 +61,59 @@ export const Navbar: React.FC = () => {
           </div>
         </Link>
 
-        {/* Espace Central / Indicateurs Enseignant */}
+        {/* 2. Barre de Navigation Principale pour Ordinateur / PC (Masquée sur Mobile) */}
         {user && (
-          <div className="flex items-center gap-3 sm:gap-4">
-            {/* Classe de l'Enseignant Épurée (Sans Bulle) */}
-            <div className="hidden sm:flex flex-col text-right pr-3 border-r border-border-default">
+          <nav className="hidden md:flex items-center gap-1 lg:gap-2">
+            {navLinks.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.to === '/'}
+                className={({ isActive }) =>
+                  `px-3 py-2 rounded-xl text-xs lg:text-sm font-semibold transition-all flex items-center gap-2 ${
+                    isActive
+                      ? 'bg-primary-50 text-primary-700 border border-primary-200/60 shadow-subtle'
+                      : 'text-text-secondary hover:text-text-primary hover:bg-background-surface'
+                  }`
+                }
+              >
+                <item.icon className="w-4 h-4" />
+                <span>{item.label}</span>
+              </NavLink>
+            ))}
+
+            {user.role === 'ADMIN' && (
+              <NavLink
+                to="/admin"
+                className={({ isActive }) =>
+                  `px-3 py-2 rounded-xl text-xs lg:text-sm font-semibold transition-all flex items-center gap-2 ${
+                    isActive
+                      ? 'bg-primary-50 text-primary-700 border border-primary-200/60 shadow-subtle'
+                      : 'text-text-secondary hover:text-text-primary hover:bg-background-surface'
+                  }`
+                }
+              >
+                <Shield className="w-4 h-4 text-primary-600" />
+                <span>Administration</span>
+              </NavLink>
+            )}
+          </nav>
+        )}
+
+        {/* 3. Espace Utilisateur & Statut sur Ordinateur / PC (Masqué sur Mobile pour éliminer toute redondance) */}
+        {user && (
+          <div className="hidden md:flex items-center gap-3 lg:gap-4">
+            {/* Niveau Enseigné Épuré */}
+            <div className="flex flex-col text-right pr-3 border-r border-border-default">
               <span className="text-[10px] text-text-muted font-medium uppercase tracking-wider">
                 Niveau Enseigné
               </span>
-              <span className="text-xs font-bold text-primary-700">
+              <span className="text-xs font-bold text-primary-700 truncate max-w-[140px]">
                 {levelLabel}
               </span>
             </div>
 
-            {/* Statut Abonnement */}
+            {/* Bouton ou Statut d'Abonnement */}
             {isSubActive ? (
               <span className="text-xs font-semibold text-status-success-text flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-status-success-badge animate-pulse" />
@@ -73,21 +129,28 @@ export const Navbar: React.FC = () => {
               </button>
             )}
 
-            {/* Menu Utilisateur */}
+            {/* Menu Utilisateur Ordinateur */}
             <div className="relative">
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-background-surface transition-colors focus:outline-none"
+                className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-background-surface transition-colors focus:outline-none"
                 aria-label="Menu du compte"
               >
-                <div className="w-8 h-8 rounded-full bg-primary-100 text-primary-800 font-semibold text-xs flex items-center justify-center border border-primary-200">
-                  {user.firstName[0]}
-                  {user.lastName[0]}
-                </div>
-                <ChevronDown className="w-4 h-4 text-text-muted hidden sm:block" />
+                {user.avatarUrl ? (
+                  <img
+                    src={user.avatarUrl}
+                    alt="Profil"
+                    className="w-8 h-8 rounded-full object-cover border border-primary-300"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-primary-100 text-primary-800 font-semibold text-xs flex items-center justify-center border border-primary-200">
+                    {user.firstName[0]}
+                    {user.lastName[0]}
+                  </div>
+                )}
+                <ChevronDown className="w-3.5 h-3.5 text-text-muted" />
               </button>
 
-              {/* Menu Déroulant */}
               {isDropdownOpen && (
                 <div
                   className="absolute right-0 mt-2 w-56 bg-background-card rounded-xl shadow-elevated border border-border-default py-1 z-50 animate-in fade-in zoom-in-95 duration-150"

@@ -12,7 +12,7 @@ export const BottomNavigation: React.FC = () => {
   ];
 
   return (
-    <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-background-card/95 backdrop-blur-md border-t border-border-default shadow-elevated pb-safe">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-background-card/95 backdrop-blur-md border-t border-border-default shadow-elevated pb-safe">
       <div className="grid grid-cols-5 h-16">
         {navItems.map((item) => (
           <NavLink

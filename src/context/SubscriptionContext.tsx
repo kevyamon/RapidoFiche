@@ -37,7 +37,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     try {
       setIsLoading(true);
-      const response = await apiClient.get('/subscriptions/me');
+      const response = await apiClient.get('/me/subscription');
       if (response.data?.success) {
         setSubscription(response.data.data);
       }
@@ -59,8 +59,10 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const closePayModal = () => setIsPayModalOpen(false);
 
   const initiateSubscriptionPayment = async (phoneNumber?: string) => {
+    const cleanPhone = phoneNumber?.trim() || undefined;
     const response = await apiClient.post('/payments/initiate', {
-      phoneNumber,
+      phoneNumber: cleanPhone,
+      customerPhone: cleanPhone,
       callbackUrl: `${window.location.origin}/profil?payment=success`,
     });
 

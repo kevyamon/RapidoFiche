@@ -131,7 +131,7 @@ export const LessonsPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in w-full max-w-full overflow-hidden">
       {/* En-tête de Section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>

@@ -40,7 +40,7 @@ export const FavoritesPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in w-full max-w-full overflow-hidden">
       {/* En-tête */}
       <div>
         <h1 className="text-xl sm:text-2xl font-bold text-text-primary flex items-center gap-2">

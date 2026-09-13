@@ -42,7 +42,7 @@ export const AppLayout: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background-main text-text-primary">
+    <div className="min-h-screen flex flex-col bg-background-main text-text-primary overflow-x-hidden w-full max-w-full">
       {/* Bannière de Connexion Hors-Ligne */}
       {!isOnline && (
         <div className="bg-status-warning-bg border-b border-status-warning-border px-4 py-2 text-center text-xs font-medium text-status-warning-text flex items-center justify-center gap-2 sticky top-0 z-50">
@@ -55,7 +55,7 @@ export const AppLayout: React.FC = () => {
       <Navbar />
 
       {/* Contenu Principal avec marge basse pour la Bottom Bar Mobile */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24 sm:pb-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24 md:pb-8 overflow-x-hidden">
         <Outlet />
       </main>
 
