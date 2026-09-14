@@ -16,6 +16,12 @@ export const AppLayout: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   useEffect(() => {
+    if (user?.phone) {
+      setPhoneNumber(user.phone);
+    }
+  }, [user?.phone, isPayModalOpen]);
+
+  useEffect(() => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
 

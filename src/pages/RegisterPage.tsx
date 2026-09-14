@@ -21,8 +21,13 @@ export const RegisterPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!firstName || !lastName || !email || !password || !primaryLevelId) {
-      setErrorMessage('Veuillez remplir tous les champs obligatoires.');
+    if (!firstName || !lastName || !email || !password || !phone || !primaryLevelId) {
+      setErrorMessage('Veuillez remplir tous les champs obligatoires (dont votre numéro de téléphone).');
+      return;
+    }
+
+    if (phone.trim().length < 8) {
+      setErrorMessage('Veuillez saisir un numéro de téléphone valide (au moins 8 chiffres).');
       return;
     }
 
@@ -39,7 +44,7 @@ export const RegisterPage: React.FC = () => {
         lastName: lastName.trim(),
         email: email.trim(),
         password,
-        phone: phone.trim() || undefined,
+        phone: phone.trim(),
         primaryLevelId,
       });
       navigate('/', { replace: true });
@@ -172,7 +177,7 @@ export const RegisterPage: React.FC = () => {
 
             <div>
               <label className="block text-xs font-semibold text-text-secondary mb-1.5">
-                Téléphone (Optionnel)
+                Téléphone *
               </label>
               <div className="relative">
                 <Phone className="w-4 h-4 text-text-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -181,6 +186,7 @@ export const RegisterPage: React.FC = () => {
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="0708091011"
+                  required
                   className="w-full pl-10 pr-3 py-2.5 rounded-xl border border-border-default bg-background-input text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
               </div>
