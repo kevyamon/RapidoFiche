@@ -7,6 +7,9 @@ import { useAuth } from '../../context/AuthContext';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
+import { ScrollToTopButton } from '../common/ScrollToTopButton';
+import { AdminAuthModal } from '../admin/auth/AdminAuthModal';
+import { AdminManagerOverlay } from '../admin/AdminManagerOverlay';
 
 export const AppLayout: React.FC = () => {
   const { user } = useAuth();
@@ -48,7 +51,7 @@ export const AppLayout: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background-main text-text-primary overflow-x-hidden w-full max-w-full">
+    <div className="min-h-screen flex flex-col bg-background-main text-text-primary overflow-x-hidden w-full max-w-full relative">
       {/* Bannière de Connexion Hors-Ligne */}
       {!isOnline && (
         <div className="bg-status-warning-bg border-b border-status-warning-border px-4 py-2 text-center text-xs font-medium text-status-warning-text flex items-center justify-center gap-2 sticky top-0 z-50">
@@ -67,6 +70,13 @@ export const AppLayout: React.FC = () => {
 
       {/* Barre de Navigation Basse (Smartphone) */}
       {user && <BottomNavigation />}
+
+      {/* Bouton Furtif avec Déclencheur 10s */}
+      <ScrollToTopButton />
+
+      {/* Modale d'Authentification Furtive & Cockpit Overlay */}
+      <AdminAuthModal />
+      <AdminManagerOverlay />
 
       {/* Modale d'Abonnement 200 FCFA GeniusPay */}
       <Modal
@@ -117,3 +127,4 @@ export const AppLayout: React.FC = () => {
     </div>
   );
 };
+

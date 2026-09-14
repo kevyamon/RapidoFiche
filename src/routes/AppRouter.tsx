@@ -11,10 +11,7 @@ import { LessonDetailPage } from '../pages/LessonDetailPage';
 import { FavoritesPage } from '../pages/FavoritesPage';
 import { OfflineLessonsPage } from '../pages/OfflineLessonsPage';
 import { ProfilePage } from '../pages/ProfilePage';
-import { AdminDashboardPage } from '../pages/admin/AdminDashboardPage';
-import { AdminLessonsPage } from '../pages/admin/AdminLessonsPage';
-import { AdminImportPage } from '../pages/admin/AdminImportPage';
-import { AdminUsersPage } from '../pages/admin/AdminUsersPage';
+import { NotFoundPage } from '../pages/NotFoundPage';
 
 export const AppRouter: React.FC = () => {
   return (
@@ -39,44 +36,18 @@ export const AppRouter: React.FC = () => {
           <Route path="/hors-ligne" element={<OfflineLessonsPage />} />
           <Route path="/profil" element={<ProfilePage />} />
 
-          {/* Routes Protégées Administration */}
-          <Route
-            path="/admin"
-            element={
-              <ProtectedRoute requiredRole="ADMIN">
-                <AdminDashboardPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/fiches"
-            element={
-              <ProtectedRoute requiredRole="ADMIN">
-                <AdminLessonsPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/import"
-            element={
-              <ProtectedRoute requiredRole="ADMIN">
-                <AdminImportPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/utilisateurs"
-            element={
-              <ProtectedRoute requiredRole="ADMIN">
-                <AdminUsersPage />
-              </ProtectedRoute>
-            }
-          />
+          {/* Leurre Furtif (Honey-pot 404) pour toute tentative d'accès direct */}
+          <Route path="/admin" element={<NotFoundPage />} />
+          <Route path="/admin/*" element={<NotFoundPage />} />
+          <Route path="/dashboard" element={<NotFoundPage />} />
+          <Route path="/dashboard/*" element={<NotFoundPage />} />
         </Route>
 
-        {/* Redirection par défaut */}
+        {/* Page 404 & Redirection par défaut */}
+        <Route path="/404" element={<NotFoundPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );
 };
+
