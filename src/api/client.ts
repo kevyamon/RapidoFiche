@@ -17,7 +17,11 @@ export const apiClient = axios.create({
 // 1. Intercepteur de Requête : Injection du Jeton d'Accès
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem('rapidofiche_access_token');
+    const isAdminEndpoint = config.url?.startsWith('/admin');
+    const adminToken = localStorage.getItem('rapidofiche_admin_token');
+    const userToken = localStorage.getItem('rapidofiche_access_token');
+    
+    const token = isAdminEndpoint ? (adminToken || userToken) : (userToken || adminToken);
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }

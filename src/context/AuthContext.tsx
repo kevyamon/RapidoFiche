@@ -7,7 +7,8 @@ export interface UserProfile {
   lastName: string;
   email: string;
   phone?: string;
-  role: 'TEACHER' | 'ADMIN' | 'CONTENT_MANAGER';
+  avatarUrl?: string;
+  role: 'TEACHER' | 'ADMIN' | 'SUPER_ADMIN' | 'CONTENT_MANAGER';
   primaryLevelId?: {
     _id?: string;
     id?: string;

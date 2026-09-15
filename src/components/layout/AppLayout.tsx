@@ -8,8 +8,6 @@ import { useSubscription } from '../../context/SubscriptionContext';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { ScrollToTopButton } from '../common/ScrollToTopButton';
-import { AdminAuthModal } from '../admin/auth/AdminAuthModal';
-import { AdminManagerOverlay } from '../admin/AdminManagerOverlay';
 
 export const AppLayout: React.FC = () => {
   const { user } = useAuth();
@@ -71,12 +69,8 @@ export const AppLayout: React.FC = () => {
       {/* Barre de Navigation Basse (Smartphone) */}
       {user && <BottomNavigation />}
 
-      {/* Bouton Furtif avec Déclencheur 10s */}
+      {/* Bouton de Scroll en haut */}
       <ScrollToTopButton />
-
-      {/* Modale d'Authentification Furtive & Cockpit Overlay */}
-      <AdminAuthModal />
-      <AdminManagerOverlay />
 
       {/* Modale d'Abonnement 200 FCFA GeniusPay */}
       <Modal

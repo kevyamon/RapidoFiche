@@ -4,6 +4,8 @@ import { Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
 
+import { StealthLogoTrigger } from '../components/common/StealthLogoTrigger';
+
 export const LoginPage: React.FC = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -45,13 +47,9 @@ export const LoginPage: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-background-main animate-fade-in">
       <div className="max-w-md w-full bg-background-card rounded-2xl border border-border-default p-6 sm:p-8 shadow-elevated">
-        {/* Logo & Titre */}
+        {/* Logo Furtif & Titre */}
         <div className="text-center mb-6">
-          <img
-            src="/logo.png"
-            alt="Logo RapidoFiche"
-            className="w-14 h-14 rounded-2xl object-cover mx-auto mb-3 shadow-card"
-          />
+          <StealthLogoTrigger />
           <h1 className="text-2xl font-bold text-text-primary tracking-tight">
             Connexion Enseignant
           </h1>

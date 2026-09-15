@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { adminAuthApi } from '../../../api/adminAuthApi';
-import { Shield, Loader2, RefreshCw, Clock } from 'lucide-react';
+import { ShieldCheck, Loader2, RefreshCw, Clock } from 'lucide-react';
 
 interface AuditLogEntry {
   id: string;
@@ -26,7 +26,7 @@ export const AdminAuditLogsView: React.FC = () => {
   const fetchLogs = async (p = 1) => {
     setIsLoading(true);
     try {
-      const res = await adminAuthApi.getAuditLogs(p, 15) as {
+      const res = (await adminAuthApi.getAuditLogs(p, 15)) as {
         data?: AuditLogEntry[];
         pagination?: { totalPages: number };
       };
@@ -35,7 +35,7 @@ export const AdminAuditLogsView: React.FC = () => {
         setTotalPages(res.pagination?.totalPages || 1);
       }
     } catch {
-      // Ignorer ou gérer dégradé
+      // Ignorer
     } finally {
       setIsLoading(false);
     }
@@ -48,89 +48,90 @@ export const AdminAuditLogsView: React.FC = () => {
   const getActionBadge = (action: string) => {
     switch (action) {
       case 'ADMIN_REGISTERED':
-        return 'bg-purple-50 text-purple-700 border-purple-200';
+        return 'bg-purple-500/10 text-purple-300 border-purple-500/30';
       case 'ADMIN_LOGIN':
-        return 'bg-blue-50 text-blue-700 border-blue-200';
+        return 'bg-blue-500/10 text-blue-300 border-blue-500/30';
       case 'USER_SUSPENDED':
-        return 'bg-red-50 text-red-700 border-red-200';
+        return 'bg-red-500/10 text-red-300 border-red-500/30';
       case 'USER_REACTIVATED':
-        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+        return 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30';
       case 'LESSON_PUBLISHED':
-        return 'bg-amber-50 text-amber-700 border-amber-200';
+        return 'bg-amber-500/10 text-amber-300 border-amber-500/30';
       default:
-        return 'bg-slate-100 text-slate-700 border-slate-200';
+        return 'bg-slate-700 text-slate-300 border-slate-600';
     }
   };
 
   return (
-    <div className="space-y-4 text-left">
-      <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+    <div className="space-y-6 animate-fade-in text-left">
+      {/* En-tête */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-800 pb-4">
         <div>
-          <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-            <Shield className="w-5 h-5 text-blue-600" />
-            Journal d’Audit & Sécurité
+          <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight flex items-center gap-2">
+            <ShieldCheck className="w-6 h-6 text-blue-400" />
+            <span>Journal d’Audit & Sécurité</span>
           </h2>
-          <p className="text-xs text-slate-500">
-            Historique certifié et immuable de toutes les opérations administratives
+          <p className="text-xs sm:text-sm text-slate-400 mt-1">
+            Traçabilité certifiée et immuable de toutes les opérations administratives
           </p>
         </div>
         <button
           type="button"
           onClick={() => fetchLogs(page)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-xs font-semibold text-slate-200 hover:text-white hover:bg-slate-700 transition-colors self-start sm:self-auto"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-          Actualiser
+          <span>Actualiser</span>
         </button>
       </div>
 
       {isLoading ? (
-        <div className="flex flex-col items-center justify-center py-16 text-slate-500">
-          <Loader2 className="w-6 h-6 animate-spin text-blue-600 mb-2" />
-          <span className="text-xs">Chargement du journal d’audit...</span>
+        <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+          <Loader2 className="w-6 h-6 animate-spin text-blue-400 mb-2" />
+          <span className="text-xs font-medium">Chargement du journal d’audit...</span>
         </div>
       ) : logs.length === 0 ? (
-        <div className="p-8 text-center text-slate-500 bg-white rounded-xl border border-slate-200">
-          <Clock className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+        <div className="p-10 text-center text-slate-400 bg-slate-800/90 rounded-2xl border border-slate-700">
+          <Clock className="w-8 h-8 mx-auto mb-2 text-slate-500" />
           <p className="text-xs">Aucune action enregistrée pour le moment.</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+        <div className="bg-slate-800/90 rounded-2xl border border-slate-700 shadow-xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left">
-              <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider">
+              <thead className="bg-slate-900/80 border-b border-slate-700 text-slate-400 font-semibold uppercase tracking-wider">
                 <tr>
                   <th className="py-3 px-4">Date & Heure</th>
                   <th className="py-3 px-4">Action</th>
                   <th className="py-3 px-4">Auteur</th>
-                  <th className="py-3 px-4">Entité / Cible</th>
+                  <th className="py-3 px-4">Entité Ciblée</th>
                   <th className="py-3 px-4">Métadonnées</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-700/60">
                 {logs.map((log) => (
-                  <tr key={log.id} className="hover:bg-slate-50/50">
-                    <td className="py-3 px-4 text-slate-500 whitespace-nowrap">
+                  <tr key={log.id} className="hover:bg-slate-700/40 transition-colors">
+                    <td className="py-3 px-4 text-slate-400 whitespace-nowrap">
                       {new Date(log.createdAt).toLocaleString('fr-FR')}
                     </td>
                     <td className="py-3 px-4">
                       <span
-                        className={`inline-block px-2.5 py-0.5 rounded-full border font-medium ${getActionBadge(
+                        className={`inline-block px-2.5 py-0.5 rounded-full border text-[10px] font-bold ${getActionBadge(
                           log.action
                         )}`}
                       >
                         {log.action}
                       </span>
                     </td>
-                    <td className="py-3 px-4 font-medium text-slate-900">
+                    <td className="py-3 px-4 font-bold text-white">
                       {log.actorId?.email || 'Système'}
                       {log.actorId?.role && (
-                        <span className="block text-[10px] text-slate-400">
+                        <span className="block text-[10px] font-normal text-slate-400">
                           {log.actorId.role}
                         </span>
                       )}
                     </td>
-                    <td className="py-3 px-4 text-slate-600">
+                    <td className="py-3 px-4 text-slate-300">
                       {log.entityType} {log.entityId ? `(#${log.entityId.slice(-6)})` : ''}
                     </td>
                     <td className="py-3 px-4 text-slate-400 font-mono text-[11px] max-w-xs truncate">
@@ -143,23 +144,23 @@ export const AdminAuditLogsView: React.FC = () => {
           </div>
 
           {totalPages > 1 && (
-            <div className="flex items-center justify-between p-3 border-t border-slate-200 bg-slate-50 text-xs">
+            <div className="flex items-center justify-between p-3 border-t border-slate-700 bg-slate-900/80 text-xs text-slate-300">
               <button
                 type="button"
                 disabled={page <= 1}
                 onClick={() => setPage((p) => p - 1)}
-                className="px-3 py-1 rounded bg-white border border-slate-300 disabled:opacity-40"
+                className="px-3 py-1 rounded-lg bg-slate-800 border border-slate-700 disabled:opacity-40 hover:bg-slate-700"
               >
                 Précédent
               </button>
-              <span className="text-slate-600">
+              <span>
                 Page {page} sur {totalPages}
               </span>
               <button
                 type="button"
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => p + 1)}
-                className="px-3 py-1 rounded bg-white border border-slate-300 disabled:opacity-40"
+                className="px-3 py-1 rounded-lg bg-slate-800 border border-slate-700 disabled:opacity-40 hover:bg-slate-700"
               >
                 Suivant
               </button>

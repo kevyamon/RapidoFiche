@@ -21,6 +21,12 @@ export const AppRouter: React.FC = () => {
         <Route path="/connexion" element={<LoginPage />} />
         <Route path="/inscription" element={<RegisterPage />} />
 
+        {/* Leurre Furtif Public (Honey-pot 404) pour toute tentative d'accès URL direct */}
+        <Route path="/admin" element={<NotFoundPage />} />
+        <Route path="/admin/*" element={<NotFoundPage />} />
+        <Route path="/dashboard" element={<NotFoundPage />} />
+        <Route path="/dashboard/*" element={<NotFoundPage />} />
+
         {/* Routes Protégées Enseignants (avec AppLayout) */}
         <Route
           element={
@@ -35,12 +41,6 @@ export const AppRouter: React.FC = () => {
           <Route path="/favoris" element={<FavoritesPage />} />
           <Route path="/hors-ligne" element={<OfflineLessonsPage />} />
           <Route path="/profil" element={<ProfilePage />} />
-
-          {/* Leurre Furtif (Honey-pot 404) pour toute tentative d'accès direct */}
-          <Route path="/admin" element={<NotFoundPage />} />
-          <Route path="/admin/*" element={<NotFoundPage />} />
-          <Route path="/dashboard" element={<NotFoundPage />} />
-          <Route path="/dashboard/*" element={<NotFoundPage />} />
         </Route>
 
         {/* Page 404 & Redirection par défaut */}

@@ -5,7 +5,6 @@ import {
   BookOpen,
   Bookmark,
   HardDriveDownload,
-  Shield,
   CreditCard,
   ChevronDown,
   LogOut,
@@ -13,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useSubscription } from '../../context/SubscriptionContext';
+import { StealthLogoTrigger } from '../common/StealthLogoTrigger';
 
 export const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
@@ -44,22 +44,21 @@ export const Navbar: React.FC = () => {
   return (
     <header className="sticky top-0 z-40 bg-background-card/95 backdrop-blur-md border-b border-border-default shadow-subtle">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        {/* 1. Logo & Marque RapidoFiche */}
-        <Link to="/" className="flex items-center gap-2.5 focus:outline-none shrink-0">
-          <img
-            src="/logo.png"
-            alt="Logo RapidoFiche"
-            className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl object-cover shadow-card shrink-0"
+        {/* 1. Logo Furtif & Marque RapidoFiche */}
+        <div className="flex items-center gap-2.5 shrink-0">
+          <StealthLogoTrigger
+            className="w-9 h-9 sm:w-10 sm:h-10 shrink-0"
+            imageClassName="w-full h-full rounded-xl object-cover shadow-card"
           />
-          <div className="flex flex-col">
+          <Link to="/" className="flex flex-col focus:outline-none">
             <span className="font-bold text-base sm:text-lg text-primary-900 tracking-tight leading-tight">
               Rapido<span className="text-secondary-600">Fiche</span>
             </span>
             <span className="text-[10px] text-text-muted font-medium uppercase tracking-wider">
               Bibliothèque Pédagogique
             </span>
-          </div>
-        </Link>
+          </Link>
+        </div>
 
         {/* 2. Barre de Navigation Principale pour Ordinateur / PC (Masquée sur Mobile) */}
         {user && (
@@ -81,26 +80,10 @@ export const Navbar: React.FC = () => {
                 <span>{item.label}</span>
               </NavLink>
             ))}
-
-            {user.role === 'ADMIN' && (
-              <NavLink
-                to="/admin"
-                className={({ isActive }) =>
-                  `px-3 py-2 rounded-xl text-xs lg:text-sm font-semibold transition-all flex items-center gap-2 ${
-                    isActive
-                      ? 'bg-primary-50 text-primary-700 border border-primary-200/60 shadow-subtle'
-                      : 'text-text-secondary hover:text-text-primary hover:bg-background-surface'
-                  }`
-                }
-              >
-                <Shield className="w-4 h-4 text-primary-600" />
-                <span>Administration</span>
-              </NavLink>
-            )}
           </nav>
         )}
 
-        {/* 3. Espace Utilisateur & Statut sur Ordinateur / PC (Masqué sur Mobile pour éliminer toute redondance) */}
+        {/* 3. Espace Utilisateur & Statut sur Ordinateur / PC */}
         {user && (
           <div className="hidden md:flex items-center gap-3 lg:gap-4">
             {/* Niveau Enseigné Épuré */}
@@ -163,16 +146,6 @@ export const Navbar: React.FC = () => {
                     <p className="text-xs text-text-muted truncate">{user.email}</p>
                   </div>
 
-                  {user.role === 'ADMIN' && (
-                    <Link
-                      to="/admin"
-                      className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-text-primary hover:bg-background-surface transition-colors"
-                    >
-                      <Shield className="w-4 h-4 text-primary-600" />
-                      <span>Console d'Administration</span>
-                    </Link>
-                  )}
-
                   <Link
                     to="/profil"
                     className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-text-primary hover:bg-background-surface transition-colors"
@@ -197,3 +170,4 @@ export const Navbar: React.FC = () => {
     </header>
   );
 };
+

@@ -1,6 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { adminAuthApi } from '../../../api/adminAuthApi';
-import { Users, FileText, CreditCard, DollarSign, TrendingUp, ShieldAlert, Loader2 } from 'lucide-react';
+import {
+  Users,
+  BookOpen,
+  CreditCard,
+  DollarSign,
+  TrendingUp,
+  ShieldAlert,
+  Loader2,
+  RefreshCw,
+} from 'lucide-react';
 
 interface KpiMetrics {
   totalUsers: number;
@@ -22,40 +31,37 @@ export const AdminDashboardView: React.FC = () => {
   });
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    let isMounted = true;
-    const loadKpis = async () => {
-      try {
-        const res = await adminAuthApi.getDashboardKpis() as {
-          data?: {
-            usersCount?: number;
-            lessonsCount?: number;
-            publishedCount?: number;
-            subscriptionsCount?: number;
-            revenue?: number;
-          };
+  const loadKpis = async () => {
+    try {
+      setIsLoading(true);
+      const res = (await adminAuthApi.getDashboardKpis()) as {
+        data?: {
+          usersCount?: number;
+          lessonsCount?: number;
+          publishedCount?: number;
+          subscriptionsCount?: number;
+          revenue?: number;
         };
-        if (isMounted && res?.data) {
-          setMetrics({
-            totalUsers: res.data.usersCount || 0,
-            activeTeachers: res.data.usersCount || 0,
-            totalLessons: res.data.lessonsCount || 0,
-            publishedLessons: res.data.publishedCount || 0,
-            activeSubscriptions: res.data.subscriptionsCount || 0,
-            totalRevenueFcfa: res.data.revenue || 0,
-          });
-        }
-      } catch {
-        // Mode dégradé si non configuré
-      } finally {
-        if (isMounted) setIsLoading(false);
+      };
+      if (res?.data) {
+        setMetrics({
+          totalUsers: res.data.usersCount || 0,
+          activeTeachers: res.data.usersCount || 0,
+          totalLessons: res.data.lessonsCount || 0,
+          publishedLessons: res.data.publishedCount || 0,
+          activeSubscriptions: res.data.subscriptionsCount || 0,
+          totalRevenueFcfa: res.data.revenue || 0,
+        });
       }
-    };
+    } catch {
+      // Données de secours
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     loadKpis();
-    return () => {
-      isMounted = false;
-    };
   }, []);
 
   const cards = [
@@ -64,95 +70,112 @@ export const AdminDashboardView: React.FC = () => {
       value: metrics.totalUsers,
       sublabel: `${metrics.activeTeachers} actifs sur la plateforme`,
       icon: Users,
-      color: 'text-blue-600 bg-blue-50 border-blue-200',
+      badgeColor: 'text-blue-400 bg-blue-500/10 border-blue-500/30',
+      glow: 'from-blue-500/10 to-transparent',
     },
     {
       label: 'Fiches Pédagogiques',
       value: metrics.totalLessons,
       sublabel: `${metrics.publishedLessons} publiées et conformes`,
-      icon: FileText,
-      color: 'text-emerald-600 bg-emerald-50 border-emerald-200',
+      icon: BookOpen,
+      badgeColor: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
+      glow: 'from-emerald-500/10 to-transparent',
     },
     {
       label: 'Abonnements Actifs',
       value: metrics.activeSubscriptions,
       sublabel: 'Abonnements Premium en cours',
       icon: CreditCard,
-      color: 'text-amber-600 bg-amber-50 border-amber-200',
+      badgeColor: 'text-amber-400 bg-amber-500/10 border-amber-500/30',
+      glow: 'from-amber-500/10 to-transparent',
     },
     {
       label: 'Volume Financier GeniusPay',
       value: `${metrics.totalRevenueFcfa.toLocaleString('fr-FR')} FCFA`,
       sublabel: 'Recouvrement automatique certifié',
       icon: DollarSign,
-      color: 'text-indigo-600 bg-indigo-50 border-indigo-200',
+      badgeColor: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/30',
+      glow: 'from-indigo-500/10 to-transparent',
     },
   ];
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-slate-500">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-3" />
-        <p className="text-sm">Chargement des indicateurs de performance...</p>
+      <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500 mb-3" />
+        <p className="text-sm font-medium">Chargement des indicateurs de performance...</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* En-tête de section */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-200 pb-4">
+    <div className="space-y-6 animate-fade-in text-left">
+      {/* En-tête de section avec contraste parfait */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-800 pb-4">
         <div>
-          <h2 className="text-lg font-bold text-slate-900">
+          <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
             Tableau de Bord & Indicateurs Clés
           </h2>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs sm:text-sm text-slate-400 mt-1">
             Supervision globale en temps réel de l’activité pédagogique et financière
           </p>
         </div>
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-medium">
-          <TrendingUp className="w-3.5 h-3.5" />
-          <span>Système Opérationnel</span>
+
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
+            <TrendingUp className="w-3.5 h-3.5" />
+            <span>Système Opérationnel</span>
+          </div>
+          <button
+            type="button"
+            onClick={loadKpis}
+            aria-label="Actualiser"
+            className="p-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
-      {/* Grille des Cartes KPIs */}
+      {/* Grille Responsive des Cartes KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {cards.map((c, i) => {
           const Icon = c.icon;
           return (
             <div
               key={i}
-              className="p-4 rounded-xl bg-white border border-slate-200 shadow-sm flex flex-col justify-between"
+              className={`relative overflow-hidden p-5 rounded-2xl bg-slate-800/90 border border-slate-700/70 shadow-xl flex flex-col justify-between transition-all hover:border-slate-600 hover:-translate-y-0.5 bg-gradient-to-br ${c.glow}`}
             >
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
                   {c.label}
                 </span>
-                <div className={`p-2 rounded-lg border ${c.color}`}>
+                <div className={`p-2.5 rounded-xl border ${c.badgeColor}`}>
                   <Icon className="w-4 h-4" />
                 </div>
               </div>
               <div>
-                <span className="text-2xl font-bold text-slate-900">
+                <span className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
                   {c.value}
                 </span>
-                <p className="text-xs text-slate-500 mt-1">{c.sublabel}</p>
+                <p className="text-xs text-slate-400 mt-1 font-medium">{c.sublabel}</p>
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* Bloc d'alerte sécurité */}
-      <div className="p-4 rounded-xl bg-slate-900 text-white flex items-start gap-3">
-        <ShieldAlert className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
-        <div className="text-xs space-y-1">
-          <p className="font-semibold text-slate-200">
-            Protection Stealth Active
+      {/* Bloc de Sécurité Forteresse */}
+      <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/80 border border-slate-800 shadow-xl flex items-start gap-3.5">
+        <div className="p-2 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-400 shrink-0 mt-0.5">
+          <ShieldAlert className="w-5 h-5" />
+        </div>
+        <div className="text-xs sm:text-sm space-y-1">
+          <p className="font-bold text-white">
+            Architecture Stealth Active & Audits Cryptographiques
           </p>
-          <p className="text-slate-400">
-            Toutes les sessions et modifications d’état font l’objet d’une traçabilité cryptographique dans le journal d’audit. Les routes d’administration publiques demeurent masquées sous le leurre 404.
+          <p className="text-slate-400 leading-relaxed text-xs">
+            Toutes les sessions administratives, modifications de permissions et publications font l’objet d’un enregistrement immuable dans le journal d’audit. Les routes publiques d’administration demeurent sous le leurre 404 Honey-pot.
           </p>
         </div>
       </div>
