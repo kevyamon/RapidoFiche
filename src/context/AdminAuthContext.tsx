@@ -61,11 +61,30 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     };
   }, [handleOpenStealth]);
 
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      localStorage.removeItem(ADMIN_STORAGE_KEY);
+      localStorage.removeItem(ADMIN_TOKEN_KEY);
+      localStorage.removeItem('rapidofiche_access_token');
+      localStorage.removeItem('rapidofiche_refresh_token');
+      setAdminUser(null);
+      setIsManagerOpen(false);
+      setIsAuthModalOpen(true);
+    };
+    window.addEventListener('rapidofiche_session_expired', handleSessionExpired);
+    return () => {
+      window.removeEventListener('rapidofiche_session_expired', handleSessionExpired);
+    };
+  }, []);
+
   const loginAdmin = async (data: AdminLoginDto): Promise<void> => {
     const result = await adminAuthApi.login(data);
     localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(result.user));
     localStorage.setItem(ADMIN_TOKEN_KEY, result.accessToken);
     localStorage.setItem('rapidofiche_access_token', result.accessToken);
+    if (result.tokens?.refreshToken) {
+      localStorage.setItem('rapidofiche_refresh_token', result.tokens.refreshToken);
+    }
     setAdminUser(result.user);
     setIsAuthModalOpen(false);
     setIsManagerOpen(true);
@@ -76,6 +95,9 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(result.user));
     localStorage.setItem(ADMIN_TOKEN_KEY, result.accessToken);
     localStorage.setItem('rapidofiche_access_token', result.accessToken);
+    if (result.tokens?.refreshToken) {
+      localStorage.setItem('rapidofiche_refresh_token', result.tokens.refreshToken);
+    }
     setAdminUser(result.user);
     setIsAuthModalOpen(false);
     setIsManagerOpen(true);
@@ -84,6 +106,8 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const logoutAdmin = (): void => {
     localStorage.removeItem(ADMIN_STORAGE_KEY);
     localStorage.removeItem(ADMIN_TOKEN_KEY);
+    localStorage.removeItem('rapidofiche_access_token');
+    localStorage.removeItem('rapidofiche_refresh_token');
     setAdminUser(null);
     setIsManagerOpen(false);
     setIsAuthModalOpen(false);

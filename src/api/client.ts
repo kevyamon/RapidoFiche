@@ -83,17 +83,22 @@ apiClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
+        const storedRefreshToken = localStorage.getItem('rapidofiche_refresh_token');
         const refreshResponse = await axios.post(
           `${API_BASE_URL}/auth/refresh`,
-          {},
+          { refreshToken: storedRefreshToken },
           { withCredentials: true }
         );
 
         const newAccessToken = refreshResponse.data?.data?.accessToken;
+        const newRefreshToken = refreshResponse.data?.data?.refreshToken;
         if (newAccessToken) {
           localStorage.setItem('rapidofiche_access_token', newAccessToken);
           if (localStorage.getItem('rapidofiche_admin_token')) {
             localStorage.setItem('rapidofiche_admin_token', newAccessToken);
+          }
+          if (newRefreshToken) {
+            localStorage.setItem('rapidofiche_refresh_token', newRefreshToken);
           }
           if (originalRequest.headers) {
             originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
@@ -104,6 +109,7 @@ apiClient.interceptors.response.use(
       } catch (refreshErr) {
         processQueue(refreshErr, null);
         localStorage.removeItem('rapidofiche_access_token');
+        localStorage.removeItem('rapidofiche_refresh_token');
         localStorage.removeItem('rapidofiche_user');
         localStorage.removeItem('rapidofiche_admin_token');
         localStorage.removeItem('rapidofiche_admin_user');

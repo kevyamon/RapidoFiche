@@ -3,6 +3,7 @@ import { UploadCloud, FileText, X, AlertCircle, Loader2, CheckCircle2, Layers, B
 import { AdminService, ImportBatchSummary } from '../../../services/admin.service';
 import { apiClient } from '../../../api/client';
 import { useToast } from '../../ui/Toast';
+import { AdminBatchHistoryList } from './AdminBatchHistoryList';
 
 interface LevelOption {
   id: string;
@@ -30,9 +31,14 @@ export const AdminImportView: React.FC = () => {
     const fetchPedagogy = async () => {
       try {
         const res = await apiClient.get('/levels');
-        const list = res.data?.data || [];
-        setLevels(list);
-        if (list.length > 0) setSelectedLevelId(list[0].id);
+        const rawList = res.data?.data || [];
+        const normalizedLevels: LevelOption[] = rawList.map((item: any) => ({
+          id: item.id || item._id || item.code,
+          code: item.code || '',
+          label: item.label || item.code || '',
+        }));
+        setLevels(normalizedLevels);
+        if (normalizedLevels.length > 0) setSelectedLevelId(normalizedLevels[0].id);
       } catch {
         // Mode silencieux
       }
@@ -46,9 +52,13 @@ export const AdminImportView: React.FC = () => {
     const fetchSubjects = async () => {
       try {
         const res = await apiClient.get('/subjects', { params: { levelId: selectedLevelId } });
-        const list = res.data?.data || [];
-        setSubjects(list);
-        if (list.length > 0) setSelectedSubjectId(list[0].id);
+        const rawList = res.data?.data || [];
+        const normalizedSubjects: SubjectOption[] = rawList.map((item: any) => ({
+          id: item.id || item._id || item.name,
+          name: item.name || '',
+        }));
+        setSubjects(normalizedSubjects);
+        if (normalizedSubjects.length > 0) setSelectedSubjectId(normalizedSubjects[0].id);
         else setSelectedSubjectId('');
       } catch {
         setSubjects([]);
@@ -273,29 +283,7 @@ export const AdminImportView: React.FC = () => {
       )}
 
       {/* Historique des Lots */}
-      {batches.length > 0 && (
-        <div className="space-y-3 pt-2">
-          <h3 className="text-base font-bold text-white">Derniers Lots Téléversés</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {batches.map((b) => (
-              <div
-                key={b.id}
-                className="p-4 rounded-xl bg-slate-800/80 border border-slate-700 shadow-md flex items-center justify-between"
-              >
-                <div>
-                  <p className="font-bold text-xs sm:text-sm text-white">{b.batchName}</p>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
-                    {b.processedFiles} / {b.totalFiles} fichiers traités
-                  </p>
-                </div>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 uppercase">
-                  {b.status}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      <AdminBatchHistoryList batches={batches} />
     </div>
   );
 };
