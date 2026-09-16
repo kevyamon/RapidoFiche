@@ -55,9 +55,14 @@ apiClient.interceptors.response.use(
       _retry?: boolean;
     };
 
+    const isAuthRoute =
+      originalRequest?.url?.includes('/auth/login') ||
+      originalRequest?.url?.includes('/auth/refresh') ||
+      originalRequest?.url?.includes('/auth/register');
+
     if (
       error.response?.status === 401 &&
-      error.response.data?.error?.code === 'TOKEN_EXPIRED' &&
+      !isAuthRoute &&
       originalRequest &&
       !originalRequest._retry
     ) {
@@ -87,6 +92,9 @@ apiClient.interceptors.response.use(
         const newAccessToken = refreshResponse.data?.data?.accessToken;
         if (newAccessToken) {
           localStorage.setItem('rapidofiche_access_token', newAccessToken);
+          if (localStorage.getItem('rapidofiche_admin_token')) {
+            localStorage.setItem('rapidofiche_admin_token', newAccessToken);
+          }
           if (originalRequest.headers) {
             originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
           }
@@ -97,6 +105,8 @@ apiClient.interceptors.response.use(
         processQueue(refreshErr, null);
         localStorage.removeItem('rapidofiche_access_token');
         localStorage.removeItem('rapidofiche_user');
+        localStorage.removeItem('rapidofiche_admin_token');
+        localStorage.removeItem('rapidofiche_admin_user');
         window.dispatchEvent(new CustomEvent('rapidofiche_session_expired'));
         return Promise.reject(refreshErr);
       } finally {

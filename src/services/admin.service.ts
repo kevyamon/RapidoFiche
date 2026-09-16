@@ -70,18 +70,23 @@ export class AdminService {
     await apiClient.patch(`/admin/users/${userId}/level`, { primaryLevelId });
   }
 
-  public static async uploadBatch(files: File[]): Promise<ImportBatchSummary> {
+  public static async uploadBatch(
+    files: File[],
+    options?: { primaryLevelId?: string; subjectId?: string }
+  ): Promise<ImportBatchSummary> {
     const formData = new FormData();
     files.forEach((file) => {
       formData.append('files', file);
     });
 
-    const res = await apiClient.post('/admin/imports/upload', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    if (options?.primaryLevelId) {
+      formData.append('primaryLevelId', options.primaryLevelId);
+    }
+    if (options?.subjectId) {
+      formData.append('subjectId', options.subjectId);
+    }
 
+    const res = await apiClient.post('/admin/imports/upload', formData);
     return res.data?.data;
   }
 
