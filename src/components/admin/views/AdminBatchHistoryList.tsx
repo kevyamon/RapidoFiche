@@ -6,7 +6,7 @@ interface AdminBatchHistoryListProps {
 }
 
 export const AdminBatchHistoryList: React.FC<AdminBatchHistoryListProps> = ({ batches }) => {
-  if (batches.length === 0) return null;
+  if (!batches || !Array.isArray(batches) || batches.length === 0) return null;
 
   return (
     <div className="space-y-3 pt-2 text-left">

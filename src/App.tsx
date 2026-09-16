@@ -7,20 +7,24 @@ import { AdminAuthModal } from './components/admin/auth/AdminAuthModal';
 import { AdminManagerOverlay } from './components/admin/AdminManagerOverlay';
 import { AppRouter } from './routes/AppRouter';
 
+import { ErrorBoundary } from './components/common/ErrorBoundary';
+
 export const App: React.FC = () => {
   return (
-    <ToastProvider>
-      <AuthProvider>
-        <AdminAuthProvider>
-          <SubscriptionProvider>
-            <AppRouter />
-            {/* Portails d'Administration Furtive Globaux */}
-            <AdminAuthModal />
-            <AdminManagerOverlay />
-          </SubscriptionProvider>
-        </AdminAuthProvider>
-      </AuthProvider>
-    </ToastProvider>
+    <ErrorBoundary>
+      <ToastProvider>
+        <AuthProvider>
+          <AdminAuthProvider>
+            <SubscriptionProvider>
+              <AppRouter />
+              {/* Portails d'Administration Furtive Globaux */}
+              <AdminAuthModal />
+              <AdminManagerOverlay />
+            </SubscriptionProvider>
+          </AdminAuthProvider>
+        </AuthProvider>
+      </ToastProvider>
+    </ErrorBoundary>
   );
 };
 

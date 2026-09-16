@@ -70,9 +70,9 @@ export const AdminImportView: React.FC = () => {
   const loadBatches = async () => {
     try {
       const data = await AdminService.getBatches();
-      setBatches(data);
+      setBatches(Array.isArray(data) ? data : []);
     } catch {
-      // Mode silencieux
+      setBatches([]);
     }
   };
 

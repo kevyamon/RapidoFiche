@@ -91,8 +91,12 @@ export class AdminService {
   }
 
   public static async getBatches(): Promise<ImportBatchSummary[]> {
-    const res = await apiClient.get('/admin/imports');
-    return res.data?.data || [];
+    try {
+      const res = await apiClient.get('/admin/imports');
+      return Array.isArray(res.data?.data) ? res.data.data : [];
+    } catch {
+      return [];
+    }
   }
 
   public static async publishLesson(lessonId: string): Promise<void> {
