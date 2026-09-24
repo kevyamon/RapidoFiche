@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Mail, Phone, Camera, Upload } from 'lucide-react';
+import { Mail, Phone, Camera } from 'lucide-react';
 import { apiClient } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../ui/Toast';
@@ -62,20 +62,41 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
     e.preventDefault();
     try {
       setIsLoading(true);
-      await apiClient.patch('/me/profile', {
+
+      const payload: {
+        firstName: string;
+        lastName: string;
+        email: string;
+        phone?: string;
+        phoneNumber?: string;
+        primaryLevelId?: string;
+        avatarUrl?: string;
+      } = {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         email: email.trim(),
-        phone: phone.trim() || '',
-        primaryLevelId,
-        avatarUrl,
-      });
+        phone: phone.trim() || undefined,
+        phoneNumber: phone.trim() || undefined,
+        avatarUrl: avatarUrl || undefined,
+      };
+
+      if (primaryLevelId && primaryLevelId.trim().length > 0) {
+        payload.primaryLevelId = primaryLevelId.trim();
+      }
+
+      await apiClient.patch('/me/profile', payload);
 
       await refreshProfile();
       success('Profil mis à jour avec succès');
       onClose();
     } catch (err: any) {
+      const details = err?.response?.data?.error?.details;
+      const detailMsg =
+        Array.isArray(details) && details.length > 0
+          ? details.map((d: any) => d.message).join(', ')
+          : null;
       const msg =
+        detailMsg ||
         err?.response?.data?.error?.message ||
         'Échec de la mise à jour des informations de profil';
       error(msg);
@@ -190,7 +211,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
           value={primaryLevelId}
           onChange={setPrimaryLevelId}
           label="Niveau d’enseignement assigné"
-          required
+          required={false}
         />
 
         {/* Boutons d'Action */}
