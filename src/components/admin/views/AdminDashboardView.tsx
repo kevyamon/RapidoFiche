@@ -14,9 +14,13 @@ import {
 interface KpiMetrics {
   totalUsers: number;
   activeTeachers: number;
+  newTeachersThisMonth: number;
   totalLessons: number;
   publishedLessons: number;
+  draftLessons: number;
+  archivedLessons: number;
   activeSubscriptions: number;
+  expiredSubscriptions: number;
   totalRevenueFcfa: number;
 }
 
@@ -24,9 +28,13 @@ export const AdminDashboardView: React.FC = () => {
   const [metrics, setMetrics] = useState<KpiMetrics>({
     totalUsers: 0,
     activeTeachers: 0,
+    newTeachersThisMonth: 0,
     totalLessons: 0,
     publishedLessons: 0,
+    draftLessons: 0,
+    archivedLessons: 0,
     activeSubscriptions: 0,
+    expiredSubscriptions: 0,
     totalRevenueFcfa: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
@@ -37,7 +45,7 @@ export const AdminDashboardView: React.FC = () => {
       const res = (await adminAuthApi.getDashboardKpis()) as {
         data?: {
           teachers?: { total?: number; newThisMonth?: number };
-          lessons?: { total?: number; published?: number };
+          lessons?: { total?: number; published?: number; drafts?: number; archived?: number };
           subscriptions?: { active?: number; expired?: number };
           payments?: { revenueThisMonth?: number };
           usersCount?: number;
@@ -49,17 +57,26 @@ export const AdminDashboardView: React.FC = () => {
       };
       if (res?.data) {
         const d = res.data;
+        const totalLessons = d.lessons?.total ?? d.lessonsCount ?? 0;
+        const published = d.lessons?.published ?? d.publishedCount ?? 0;
+        const drafts = d.lessons?.drafts ?? Math.max(0, totalLessons - published);
+        const archived = d.lessons?.archived ?? 0;
+
         setMetrics({
           totalUsers: d.teachers?.total ?? d.usersCount ?? 0,
           activeTeachers: d.teachers?.total ?? d.usersCount ?? 0,
-          totalLessons: d.lessons?.total ?? d.lessonsCount ?? 0,
-          publishedLessons: d.lessons?.published ?? d.publishedCount ?? 0,
+          newTeachersThisMonth: d.teachers?.newThisMonth ?? 0,
+          totalLessons,
+          publishedLessons: published,
+          draftLessons: drafts,
+          archivedLessons: archived,
           activeSubscriptions: d.subscriptions?.active ?? d.subscriptionsCount ?? 0,
+          expiredSubscriptions: d.subscriptions?.expired ?? 0,
           totalRevenueFcfa: d.payments?.revenueThisMonth ?? d.revenue ?? 0,
         });
       }
     } catch {
-      // Données de secours
+      // Mode silencieux
     } finally {
       setIsLoading(false);
     }
@@ -69,11 +86,39 @@ export const AdminDashboardView: React.FC = () => {
     loadKpis();
   }, []);
 
+  const getLessonSublabel = () => {
+    if (metrics.totalLessons === 0) return 'Aucune fiche importée';
+    if (metrics.publishedLessons === 0 && metrics.draftLessons > 0) {
+      return `${metrics.draftLessons} brouillon${metrics.draftLessons > 1 ? 's' : ''} en attente de validation`;
+    }
+    if (metrics.publishedLessons > 0 && metrics.draftLessons > 0) {
+      return `${metrics.publishedLessons} publiée${metrics.publishedLessons > 1 ? 's' : ''} · ${metrics.draftLessons} brouillon${metrics.draftLessons > 1 ? 's' : ''}`;
+    }
+    return `${metrics.publishedLessons} publiée${metrics.publishedLessons > 1 ? 's' : ''} et conforme${metrics.publishedLessons > 1 ? 's' : ''}`;
+  };
+
+  const getLessonBadgeStatus = () => {
+    if (metrics.draftLessons > 0 && metrics.publishedLessons === 0) {
+      return { text: `${metrics.draftLessons} Brouillon${metrics.draftLessons > 1 ? 's' : ''}`, color: 'bg-amber-500/20 text-amber-300 border-amber-500/30' };
+    }
+    if (metrics.draftLessons > 0 && metrics.publishedLessons > 0) {
+      return { text: `${metrics.draftLessons} à valider`, color: 'bg-amber-500/20 text-amber-300 border-amber-500/30' };
+    }
+    if (metrics.publishedLessons > 0) {
+      return { text: '100% Conforme', color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' };
+    }
+    return null;
+  };
+
+  const lessonBadge = getLessonBadgeStatus();
+
   const cards = [
     {
       label: 'Enseignants Inscrits',
       value: metrics.totalUsers,
-      sublabel: `${metrics.activeTeachers} actifs sur la plateforme`,
+      sublabel: `${metrics.activeTeachers} actif${metrics.activeTeachers > 1 ? 's' : ''} sur la plateforme`,
+      tag: metrics.newTeachersThisMonth > 0 ? `+${metrics.newTeachersThisMonth} ce mois` : null,
+      tagColor: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
       icon: Users,
       badgeColor: 'text-blue-400 bg-blue-500/10 border-blue-500/30',
       glow: 'from-blue-500/10 to-transparent',
@@ -81,15 +126,23 @@ export const AdminDashboardView: React.FC = () => {
     {
       label: 'Fiches Pédagogiques',
       value: metrics.totalLessons,
-      sublabel: `${metrics.publishedLessons} publiées et conformes`,
+      sublabel: getLessonSublabel(),
+      tag: lessonBadge?.text || null,
+      tagColor: lessonBadge?.color || '',
       icon: BookOpen,
-      badgeColor: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
-      glow: 'from-emerald-500/10 to-transparent',
+      badgeColor: metrics.draftLessons > 0 && metrics.publishedLessons === 0
+        ? 'text-amber-400 bg-amber-500/10 border-amber-500/30'
+        : 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
+      glow: metrics.draftLessons > 0 && metrics.publishedLessons === 0
+        ? 'from-amber-500/10 to-transparent'
+        : 'from-emerald-500/10 to-transparent',
     },
     {
       label: 'Abonnements Actifs',
       value: metrics.activeSubscriptions,
       sublabel: 'Abonnements Premium en cours',
+      tag: metrics.expiredSubscriptions > 0 ? `${metrics.expiredSubscriptions} expiré${metrics.expiredSubscriptions > 1 ? 's' : ''}` : null,
+      tagColor: 'bg-slate-700 text-slate-300 border-slate-600',
       icon: CreditCard,
       badgeColor: 'text-amber-400 bg-amber-500/10 border-amber-500/30',
       glow: 'from-amber-500/10 to-transparent',
@@ -98,6 +151,8 @@ export const AdminDashboardView: React.FC = () => {
       label: 'Volume Financier GeniusPay',
       value: `${metrics.totalRevenueFcfa.toLocaleString('fr-FR')} FCFA`,
       sublabel: 'Recouvrement automatique certifié',
+      tag: null,
+      tagColor: '',
       icon: DollarSign,
       badgeColor: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/30',
       glow: 'from-indigo-500/10 to-transparent',
@@ -160,10 +215,17 @@ export const AdminDashboardView: React.FC = () => {
                 </div>
               </div>
               <div>
-                <span className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-                  {c.value}
-                </span>
-                <p className="text-xs text-slate-400 mt-1 font-medium">{c.sublabel}</p>
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                    {c.value}
+                  </span>
+                  {c.tag && (
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${c.tagColor}`}>
+                      {c.tag}
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-400 mt-1.5 font-medium">{c.sublabel}</p>
               </div>
             </div>
           );
