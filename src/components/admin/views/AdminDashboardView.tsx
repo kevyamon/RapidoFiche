@@ -36,6 +36,10 @@ export const AdminDashboardView: React.FC = () => {
       setIsLoading(true);
       const res = (await adminAuthApi.getDashboardKpis()) as {
         data?: {
+          teachers?: { total?: number; newThisMonth?: number };
+          lessons?: { total?: number; published?: number };
+          subscriptions?: { active?: number; expired?: number };
+          payments?: { revenueThisMonth?: number };
           usersCount?: number;
           lessonsCount?: number;
           publishedCount?: number;
@@ -44,13 +48,14 @@ export const AdminDashboardView: React.FC = () => {
         };
       };
       if (res?.data) {
+        const d = res.data;
         setMetrics({
-          totalUsers: res.data.usersCount || 0,
-          activeTeachers: res.data.usersCount || 0,
-          totalLessons: res.data.lessonsCount || 0,
-          publishedLessons: res.data.publishedCount || 0,
-          activeSubscriptions: res.data.subscriptionsCount || 0,
-          totalRevenueFcfa: res.data.revenue || 0,
+          totalUsers: d.teachers?.total ?? d.usersCount ?? 0,
+          activeTeachers: d.teachers?.total ?? d.usersCount ?? 0,
+          totalLessons: d.lessons?.total ?? d.lessonsCount ?? 0,
+          publishedLessons: d.lessons?.published ?? d.publishedCount ?? 0,
+          activeSubscriptions: d.subscriptions?.active ?? d.subscriptionsCount ?? 0,
+          totalRevenueFcfa: d.payments?.revenueThisMonth ?? d.revenue ?? 0,
         });
       }
     } catch {

@@ -36,16 +36,21 @@ export const LessonCard: React.FC<LessonCardProps> = ({
   const [isOfflineSaved, setIsOfflineSaved] = useState<boolean>(false);
   const [isSavingOffline, setIsSavingOffline] = useState<boolean>(false);
 
+  const lessonId = lesson.id || (lesson as any)._id || '';
+
   useEffect(() => {
-    offlineStorage.isLessonSaved(lesson.id).then(setIsOfflineSaved);
-  }, [lesson.id]);
+    if (lessonId) {
+      offlineStorage.isLessonSaved(lessonId).then(setIsOfflineSaved);
+    }
+  }, [lessonId]);
 
   const handleFavoriteClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!lessonId) return;
     try {
       setIsFavorite(!isFavorite);
       if (onToggleFavorite) {
-        await onToggleFavorite(lesson.id);
+        await onToggleFavorite(lessonId);
       }
     } catch {
       setIsFavorite(isFavorite);
@@ -54,8 +59,9 @@ export const LessonCard: React.FC<LessonCardProps> = ({
 
   const handleOfflineClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!lessonId) return;
     if (isOfflineSaved) {
-      await offlineStorage.removeLesson(lesson.id);
+      await offlineStorage.removeLesson(lessonId);
       setIsOfflineSaved(false);
       success('Fiche retirée du stockage hors-ligne');
       return;
@@ -64,7 +70,7 @@ export const LessonCard: React.FC<LessonCardProps> = ({
     if (onSaveOffline) {
       try {
         setIsSavingOffline(true);
-        await onSaveOffline(lesson);
+        await onSaveOffline({ ...lesson, id: lessonId });
         setIsOfflineSaved(true);
         success('Fiche enregistrée pour consultation hors-ligne');
       } catch (err: unknown) {
@@ -84,7 +90,7 @@ export const LessonCard: React.FC<LessonCardProps> = ({
 
   return (
     <div
-      onClick={() => navigate(`/fiches/${lesson.id}`)}
+      onClick={() => lessonId && navigate(`/fiches/${lessonId}`)}
       className="group bg-background-card rounded-xl border border-border-default hover:border-primary-300 p-4 sm:p-5 shadow-card hover:shadow-elevated transition-all duration-200 cursor-pointer flex flex-col justify-between"
     >
       <div>

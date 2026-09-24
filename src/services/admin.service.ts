@@ -56,8 +56,13 @@ export class AdminService {
     status?: string;
   }): Promise<{ users: AdminUserItem[]; pagination: any }> {
     const res = await apiClient.get('/admin/users', { params });
+    const rawUsers = Array.isArray(res.data?.data) ? res.data.data : [];
+    const users = rawUsers.map((u: any) => ({
+      ...u,
+      id: u.id || u._id,
+    }));
     return {
-      users: res.data?.data,
+      users,
       pagination: res.data?.pagination,
     };
   }

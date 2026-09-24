@@ -76,7 +76,7 @@ export const FavoritesPage: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
           {favorites.map((lesson) => (
             <LessonCard
-              key={lesson.id}
+              key={lesson.id || (lesson as any)._id || lesson.title}
               lesson={lesson}
               onToggleFavorite={handleRemoveFavorite}
             />

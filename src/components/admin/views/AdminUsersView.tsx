@@ -43,9 +43,11 @@ export const AdminUsersView: React.FC = () => {
   }, []);
 
   const handleToggleStatus = async (user: AdminUserItem) => {
+    const userId = user.id || (user as any)._id;
+    if (!userId) return;
     const nextStatus = user.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
     try {
-      await AdminService.updateUserStatus(user.id, nextStatus);
+      await AdminService.updateUserStatus(userId, nextStatus);
       success(`Statut mis à jour pour ${user.firstName} ${user.lastName}`);
       await loadUsers();
     } catch {
@@ -55,14 +57,16 @@ export const AdminUsersView: React.FC = () => {
 
   const handleOpenLevelModal = (user: AdminUserItem) => {
     setSelectedUser(user);
-    setNewLevelId(user.primaryLevelId?.id || '');
+    const lvl = user.primaryLevelId as any;
+    setNewLevelId(lvl?.id || lvl?._id || '');
     setIsLevelModalOpen(true);
   };
 
   const handleSaveLevel = async () => {
-    if (!selectedUser || !newLevelId) return;
+    const userId = selectedUser?.id || (selectedUser as any)?._id;
+    if (!userId || !newLevelId) return;
     try {
-      await AdminService.updateUserLevel(selectedUser.id, newLevelId);
+      await AdminService.updateUserLevel(userId, newLevelId);
       success('Niveau scolaire réassigné avec succès');
       setIsLevelModalOpen(false);
       await loadUsers();
@@ -136,7 +140,7 @@ export const AdminUsersView: React.FC = () => {
                 </tr>
               ) : (
                 users.map((u) => (
-                  <tr key={u.id} className="hover:bg-slate-700/40 transition-colors">
+                  <tr key={u.id || (u as any)._id || u.email} className="hover:bg-slate-700/40 transition-colors">
                     <td className="p-4">
                       <p className="font-semibold text-white">
                         {u.firstName} {u.lastName}

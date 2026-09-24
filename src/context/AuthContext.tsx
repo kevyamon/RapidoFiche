@@ -81,15 +81,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [refreshProfile]);
 
+  const syncAdminState = (userObj: any, token?: string) => {
+    if (token) {
+      localStorage.setItem('rapidofiche_access_token', token);
+      if (userObj.role === 'ADMIN' || userObj.role === 'SUPER_ADMIN') {
+        localStorage.setItem('rapidofiche_admin_token', token);
+      }
+    }
+    localStorage.setItem('rapidofiche_user', JSON.stringify(userObj));
+    if (userObj.role === 'ADMIN' || userObj.role === 'SUPER_ADMIN') {
+      localStorage.setItem('rapidofiche_admin_user', JSON.stringify(userObj));
+    }
+  };
+
   const login = async (email: string, password: string) => {
     const response = await apiClient.post('/auth/login', { email, password });
     const resData = response.data.data;
     const loggedUser = resData.user || resData;
     const token = resData.accessToken || resData.tokens?.accessToken;
-    if (token) {
-      localStorage.setItem('rapidofiche_access_token', token);
-    }
-    localStorage.setItem('rapidofiche_user', JSON.stringify(loggedUser));
+    syncAdminState(loggedUser, token);
     setUser(loggedUser);
     await refreshProfile();
   };
@@ -106,10 +116,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const resData = response.data.data;
     const registeredUser = resData.user || resData;
     const token = resData.accessToken || resData.tokens?.accessToken;
-    if (token) {
-      localStorage.setItem('rapidofiche_access_token', token);
-    }
-    localStorage.setItem('rapidofiche_user', JSON.stringify(registeredUser));
+    syncAdminState(registeredUser, token);
     setUser(registeredUser);
     await refreshProfile();
   };
@@ -119,10 +126,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const resData = response.data.data;
     const loggedUser = resData.user || resData;
     const token = resData.accessToken || resData.tokens?.accessToken;
-    if (token) {
-      localStorage.setItem('rapidofiche_access_token', token);
-    }
-    localStorage.setItem('rapidofiche_user', JSON.stringify(loggedUser));
+    syncAdminState(loggedUser, token);
     setUser(loggedUser);
     await refreshProfile();
   };
@@ -135,7 +139,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setUser(null);
       localStorage.removeItem('rapidofiche_access_token');
+      localStorage.removeItem('rapidofiche_refresh_token');
       localStorage.removeItem('rapidofiche_user');
+      localStorage.removeItem('rapidofiche_admin_token');
+      localStorage.removeItem('rapidofiche_admin_user');
     }
   };
 

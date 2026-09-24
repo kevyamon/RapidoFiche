@@ -20,11 +20,10 @@ apiClient.interceptors.request.use(
     if (config.data instanceof FormData && config.headers) {
       delete config.headers['Content-Type'];
     }
-    const isAdminEndpoint = config.url?.startsWith('/admin');
-    const adminToken = localStorage.getItem('rapidofiche_admin_token');
-    const userToken = localStorage.getItem('rapidofiche_access_token');
-    
-    const token = isAdminEndpoint ? (adminToken || userToken) : (userToken || adminToken);
+    const token =
+      localStorage.getItem('rapidofiche_access_token') ||
+      localStorage.getItem('rapidofiche_admin_token');
+
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }

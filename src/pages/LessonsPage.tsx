@@ -107,17 +107,20 @@ export const LessonsPage: React.FC = () => {
     if (!subscription?.endDate || !user) {
       throw new Error('Abonnement actif requis pour la sauvegarde hors-ligne');
     }
-    const accessRes = await apiClient.post(`/lessons/${lesson.id}/access`);
+    const lessonId = lesson.id || (lesson as any)._id;
+    if (!lessonId) throw new Error('Identifiant de fiche introuvable');
+
+    const accessRes = await apiClient.post(`/lessons/${lessonId}/access`);
     const streamToken = accessRes.data?.data?.accessToken;
 
-    const pdfRes = await apiClient.get(`/lessons/${lesson.id}/stream`, {
+    const pdfRes = await apiClient.get(`/lessons/${lessonId}/stream`, {
       params: { token: streamToken },
       responseType: 'blob',
     });
 
     await offlineStorage.saveLesson(
       {
-        id: lesson.id,
+        id: lessonId,
         title: lesson.title,
         levelId: lesson.levelId,
         subjectId: lesson.subjectId,
