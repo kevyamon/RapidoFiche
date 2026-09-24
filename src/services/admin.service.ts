@@ -86,7 +86,9 @@ export class AdminService {
       formData.append('subjectId', options.subjectId);
     }
 
-    const res = await apiClient.post('/admin/imports/upload', formData);
+    const res = await apiClient.post('/admin/imports/upload', formData, {
+      timeout: 120000,
+    });
     return res.data?.data;
   }
 
