@@ -28,7 +28,13 @@ export interface ImportBatchSummary {
   processedFiles: number;
   successfulFiles: number;
   failedFiles: number;
-  status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+  status:
+    | 'UPLOADING'
+    | 'PENDING'
+    | 'PROCESSING'
+    | 'REVIEW_REQUIRED'
+    | 'COMPLETED'
+    | 'FAILED';
   createdAt: string;
   files: Array<{
     fileName: string;
