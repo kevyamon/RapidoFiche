@@ -37,6 +37,7 @@ export const LessonsPage: React.FC = () => {
   // Charger les matières de l'enseignant
   useEffect(() => {
     const fetchSubjects = async () => {
+      if (!user) return;
       try {
         const res = await apiClient.get('/me/subjects');
         if (res.data?.success) {
@@ -47,7 +48,7 @@ export const LessonsPage: React.FC = () => {
       }
     };
     fetchSubjects();
-  }, []);
+  }, [user]);
 
   // Charger les fiches avec filtres et pagination
   const fetchLessons = useCallback(

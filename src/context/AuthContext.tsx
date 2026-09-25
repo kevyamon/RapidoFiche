@@ -81,12 +81,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [refreshProfile]);
 
-  const syncAdminState = (userObj: any, token?: string) => {
+  const syncAdminState = (userObj: any, token?: string, refreshToken?: string) => {
     if (token) {
       localStorage.setItem('rapidofiche_access_token', token);
       if (userObj.role === 'ADMIN' || userObj.role === 'SUPER_ADMIN') {
         localStorage.setItem('rapidofiche_admin_token', token);
       }
+    }
+    if (refreshToken) {
+      localStorage.setItem('rapidofiche_refresh_token', refreshToken);
     }
     localStorage.setItem('rapidofiche_user', JSON.stringify(userObj));
     if (userObj.role === 'ADMIN' || userObj.role === 'SUPER_ADMIN') {
@@ -99,7 +102,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const resData = response.data.data;
     const loggedUser = resData.user || resData;
     const token = resData.accessToken || resData.tokens?.accessToken;
-    syncAdminState(loggedUser, token);
+    const refreshToken = resData.refreshToken || resData.tokens?.refreshToken;
+    syncAdminState(loggedUser, token, refreshToken);
     setUser(loggedUser);
     await refreshProfile();
   };
@@ -116,7 +120,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const resData = response.data.data;
     const registeredUser = resData.user || resData;
     const token = resData.accessToken || resData.tokens?.accessToken;
-    syncAdminState(registeredUser, token);
+    const refreshToken = resData.refreshToken || resData.tokens?.refreshToken;
+    syncAdminState(registeredUser, token, refreshToken);
     setUser(registeredUser);
     await refreshProfile();
   };
@@ -126,7 +131,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const resData = response.data.data;
     const loggedUser = resData.user || resData;
     const token = resData.accessToken || resData.tokens?.accessToken;
-    syncAdminState(loggedUser, token);
+    const refreshToken = resData.refreshToken || resData.tokens?.refreshToken;
+    syncAdminState(loggedUser, token, refreshToken);
     setUser(loggedUser);
     await refreshProfile();
   };

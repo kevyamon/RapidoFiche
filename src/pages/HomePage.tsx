@@ -32,6 +32,10 @@ export const HomePage: React.FC = () => {
 
   useEffect(() => {
     const fetchDashboardData = async () => {
+      if (!user) {
+        setIsLoading(false);
+        return;
+      }
       try {
         setIsLoading(true);
         const [subjectsRes, historyRes] = await Promise.all([
@@ -55,7 +59,7 @@ export const HomePage: React.FC = () => {
     };
 
     fetchDashboardData();
-  }, []);
+  }, [user]);
 
   const isSubActive = subscription?.status === 'ACTIVE';
 

@@ -59,12 +59,17 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const closePayModal = () => setIsPayModalOpen(false);
 
   const initiateSubscriptionPayment = async (phoneNumber?: string) => {
-    const cleanPhone = phoneNumber?.trim() || undefined;
-    const response = await apiClient.post('/payments/initiate', {
-      phoneNumber: cleanPhone,
-      customerPhone: cleanPhone,
+    const cleanPhone = phoneNumber?.trim();
+    const payload: Record<string, string> = {
       callbackUrl: `${window.location.origin}${window.location.pathname}?payment=success`,
-    });
+    };
+
+    if (cleanPhone && cleanPhone.length >= 8) {
+      payload.phoneNumber = cleanPhone;
+      payload.customerPhone = cleanPhone;
+    }
+
+    const response = await apiClient.post('/payments/initiate', payload);
 
     const checkoutUrl = response.data?.data?.checkoutUrl;
     const reference = response.data?.data?.reference;

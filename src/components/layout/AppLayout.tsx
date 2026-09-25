@@ -12,7 +12,12 @@ import { useToast } from '../ui/Toast';
 
 export const AppLayout: React.FC = () => {
   const { user } = useAuth();
-  const { isPayModalOpen, closePayModal, initiateSubscriptionPayment } = useSubscription();
+  const {
+    isPayModalOpen,
+    closePayModal,
+    initiateSubscriptionPayment,
+    checkSubscription,
+  } = useSubscription();
   const { error: toastError, info: toastInfo } = useToast();
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
   const [phoneNumber, setPhoneNumber] = useState<string>('');
