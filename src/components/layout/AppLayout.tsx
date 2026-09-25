@@ -8,10 +8,12 @@ import { useSubscription } from '../../context/SubscriptionContext';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { ScrollToTopButton } from '../common/ScrollToTopButton';
+import { useToast } from '../ui/Toast';
 
 export const AppLayout: React.FC = () => {
   const { user } = useAuth();
   const { isPayModalOpen, closePayModal, initiateSubscriptionPayment } = useSubscription();
+  const { error: toastError, info: toastInfo } = useToast();
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
   const [phoneNumber, setPhoneNumber] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -39,12 +41,36 @@ export const AppLayout: React.FC = () => {
     e.preventDefault();
     try {
       setIsSubmitting(true);
+      toastInfo('Connexion à la passerelle GeniusPay...');
       const res = await initiateSubscriptionPayment(phoneNumber || undefined);
       if (res.checkoutUrl) {
-        window.location.href = res.checkoutUrl;
+        closePayModal();
+        setIsSubmitting(false);
+
+        const isExternal =
+          res.checkoutUrl.startsWith('https://pay.genius.ci') ||
+          res.checkoutUrl.startsWith('http://pay.genius.ci') ||
+          (!res.checkoutUrl.includes(window.location.host) &&
+            (res.checkoutUrl.startsWith('http://') || res.checkoutUrl.startsWith('https://')));
+
+        if (isExternal) {
+          window.location.href = res.checkoutUrl;
+          return;
+        }
+
+        // Mode Mock local : rechargement propre avec abonnement activé
+        await checkSubscription();
+        window.location.reload();
+      } else {
+        throw new Error('L’URL de paiement GeniusPay est introuvable.');
       }
-    } catch {
+    } catch (err: any) {
       setIsSubmitting(false);
+      const message =
+        err?.response?.data?.error?.message ||
+        err?.message ||
+        'Échec de l’ouverture de la page de paiement. Veuillez réessayer';
+      toastError(message);
     }
   };
 

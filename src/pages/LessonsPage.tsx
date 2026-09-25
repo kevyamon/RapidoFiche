@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, ShieldAlert, CreditCard } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useSubscription } from '../context/SubscriptionContext';
+import { Button } from '../components/ui/Button';
 import { LessonFilter, LessonFilterValues, SubjectItem } from '../components/lessons/LessonFilter';
 import { LessonGrid, PaginationInfo } from '../components/lessons/LessonGrid';
 import { LessonSummary } from '../components/lessons/LessonCard';
@@ -12,7 +13,7 @@ import { useToast } from '../components/ui/Toast';
 
 export const LessonsPage: React.FC = () => {
   const { user } = useAuth();
-  const { subscription } = useSubscription();
+  const { subscription, openPayModal } = useSubscription();
   const { error } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -133,8 +134,38 @@ export const LessonsPage: React.FC = () => {
     );
   };
 
+  const isSubActive = subscription?.status === 'ACTIVE';
+
   return (
     <div className="space-y-6 animate-fade-in w-full max-w-full overflow-hidden">
+      {/* Bannière de Verrouillage si Abonnement Inactif/Expiré */}
+      {!isSubActive && (
+        <div className="p-4 sm:p-5 rounded-2xl bg-primary-50 border border-primary-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-subtle">
+          <div className="flex items-start sm:items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-primary-100 text-primary-800 shrink-0 mt-0.5 sm:mt-0">
+              <ShieldAlert className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-primary-900">
+                Abonnement requis pour accéder aux fiches complètes
+              </h2>
+              <p className="text-xs text-primary-700 mt-0.5">
+                Valable 30 jours pour l’ensemble des matières et semaines de votre classe.
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={openPayModal}
+            leftIcon={<CreditCard className="w-4 h-4" />}
+            className="shrink-0 self-start sm:self-auto"
+          >
+            S’abonner (200 FCFA)
+          </Button>
+        </div>
+      )}
+
       {/* En-tête de Section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>

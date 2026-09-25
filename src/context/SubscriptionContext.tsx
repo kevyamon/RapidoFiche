@@ -63,12 +63,22 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     const response = await apiClient.post('/payments/initiate', {
       phoneNumber: cleanPhone,
       customerPhone: cleanPhone,
-      callbackUrl: `${window.location.origin}/profil?payment=success`,
+      callbackUrl: `${window.location.origin}${window.location.pathname}?payment=success`,
     });
 
+    const checkoutUrl = response.data?.data?.checkoutUrl;
+    const reference = response.data?.data?.reference;
+
+    if (!checkoutUrl) {
+      throw new Error(
+        response.data?.error?.message ||
+        'Impossible de générer le lien de paiement GeniusPay. Veuillez réessayer'
+      );
+    }
+
     return {
-      checkoutUrl: response.data?.data?.checkoutUrl,
-      reference: response.data?.data?.reference,
+      checkoutUrl,
+      reference,
     };
   };
 

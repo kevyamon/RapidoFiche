@@ -17,6 +17,7 @@ export interface PdfViewerProps {
   onBack?: () => void;
   isLoading?: boolean;
   error?: string | null;
+  watermarkText?: string;
 }
 
 export const PdfViewer: React.FC<PdfViewerProps> = ({
@@ -25,6 +26,7 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({
   onBack,
   isLoading = false,
   error = null,
+  watermarkText = 'RapidoFiche — Licence Enseignant — Reproduction Interdite',
 }) => {
   const [zoom, setZoom] = useState<number>(100);
   const [rotation, setRotation] = useState<number>(0);
@@ -54,11 +56,33 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({
     };
   }, []);
 
+  // Blocage global des raccourcis de téléchargement, impression et capture
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+      const isCmdOrCtrl = isMac ? e.metaKey : e.ctrlKey;
+
+      if (
+        (isCmdOrCtrl && (e.key === 'p' || e.key === 'P' || e.key === 's' || e.key === 'S' || e.key === 'u' || e.key === 'U')) ||
+        e.key === 'F12' ||
+        (isCmdOrCtrl && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'C' || e.key === 'c' || e.key === 'J' || e.key === 'j'))
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown, true);
+    };
+  }, []);
+
   const handleZoomIn = () => setZoom((prev) => Math.min(prev + 20, 200));
   const handleZoomOut = () => setZoom((prev) => Math.max(prev - 20, 60));
   const handleRotate = () => setRotation((prev) => (prev + 90) % 360);
 
-  // Protection contre l'impression et le clic droit
+  // Protection contre le clic droit
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
   };
@@ -153,17 +177,38 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({
 
         {!isLoading && !error && pdfBlobUrl && (
           <div
-            className="w-full h-full flex items-center justify-center transition-transform duration-200"
+            className="w-full h-full flex items-center justify-center transition-transform duration-200 relative"
             style={{
               transform: `scale(${zoom / 100}) rotate(${rotation}deg)`,
               transformOrigin: 'center center',
             }}
           >
+            {/* Style pour interdire strictement l'impression */}
+            <style>
+              {`@media print { body, html, #root { display: none !important; visibility: hidden !important; } }`}
+            </style>
+
             <iframe
               src={`${pdfBlobUrl}#toolbar=0&navpanes=0&scrollbar=1`}
               title={title}
               className="w-full h-full rounded-lg bg-white shadow-card border border-border-default"
             />
+
+            {/* Filigrane Dynamique Anti-Capture / Anti-Fuite */}
+            <div
+              className="absolute inset-0 pointer-events-none flex flex-col justify-around items-center opacity-[0.06] overflow-hidden select-none z-10"
+              aria-hidden="true"
+            >
+              <div className="text-lg sm:text-xl font-black text-text-primary -rotate-45 tracking-widest uppercase text-center px-4 whitespace-nowrap">
+                {watermarkText}
+              </div>
+              <div className="text-lg sm:text-xl font-black text-text-primary -rotate-45 tracking-widest uppercase text-center px-4 whitespace-nowrap">
+                {watermarkText}
+              </div>
+              <div className="text-lg sm:text-xl font-black text-text-primary -rotate-45 tracking-widest uppercase text-center px-4 whitespace-nowrap">
+                {watermarkText}
+              </div>
+            </div>
           </div>
         )}
       </div>

@@ -199,6 +199,11 @@ export const LessonDetailPage: React.FC = () => {
           title={title}
           isLoading={isLoading}
           error={null}
+          watermarkText={
+            user
+              ? `${user.firstName} ${user.lastName} • ${user.phone || user.email} • RapidoFiche Officiel`
+              : 'RapidoFiche — Licence Enseignant Protégée'
+          }
           onBack={() => navigate(-1)}
         />
       )}
