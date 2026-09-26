@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { HardDriveDownload, Bookmark, CreditCard, AlertCircle } from 'lucide-react';
+import { HardDriveDownload, Bookmark } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { offlineStorage } from '../services/offline.storage';
 import { useAuth } from '../context/AuthContext';
 import { useSubscription } from '../context/SubscriptionContext';
 import { PdfViewer } from '../components/viewer/PdfViewer';
+import { LessonAccessBlocked } from '../components/lessons/LessonAccessBlocked';
 import { Button } from '../components/ui/Button';
 import { useToast } from '../components/ui/Toast';
 
@@ -45,12 +46,15 @@ export const LessonDetailPage: React.FC = () => {
     }
   }, [location.search, location.pathname, navigate, verifyPayment, success, info]);
 
+  const [errorType, setErrorType] = useState<'SUBSCRIPTION' | 'LEVEL' | 'GENERAL' | null>(null);
+
   const loadLessonPdf = useCallback(async () => {
     if (!id) return;
 
     try {
       setIsLoading(true);
       setErrorMessage(null);
+      setErrorType(null);
 
       // 1. Vérifier si la fiche est stockée hors-ligne
       const localItem = await offlineStorage.getLesson(id);
@@ -65,6 +69,7 @@ export const LessonDetailPage: React.FC = () => {
 
       // 2. Si non stockée localement, vérifier le réseau et demander l'accès
       if (!navigator.onLine) {
+        setErrorType('GENERAL');
         setErrorMessage(
           'Vous êtes actuellement hors-ligne et cette fiche n’a pas été sauvegardée localement.'
         );
@@ -74,30 +79,83 @@ export const LessonDetailPage: React.FC = () => {
 
       // Demande de jeton d'accès sécurisé (Mode Forteresse)
       const accessRes = await apiClient.post(`/lessons/${id}/access`);
-      const { lesson, accessToken } = accessRes.data.data;
-      setTitle(lesson.title);
-      setIsFavorite(!!lesson.isFavorite);
+      const accessData = accessRes.data?.data;
+      const streamToken = accessData?.accessToken || accessData?.token;
+
+      if (accessData?.lesson?.title) {
+        setTitle(accessData.lesson.title);
+      } else {
+        try {
+          const detailRes = await apiClient.get(`/lessons/${id}`);
+          if (detailRes.data?.data?.title) {
+            setTitle(detailRes.data.data.title);
+          }
+        } catch {
+          // Ignorer l'échec de récupération du titre secondaire
+        }
+      }
+
+      if (accessData?.lesson?.isFavorite !== undefined) {
+        setIsFavorite(!!accessData.lesson.isFavorite);
+      }
+
+      if (!streamToken) {
+        throw new Error('Jeton de visionnage non fourni par le serveur');
+      }
 
       // Récupération du flux PDF binaire
       const pdfRes = await apiClient.get(`/lessons/${id}/stream`, {
-        params: { token: accessToken },
+        params: { token: streamToken },
         responseType: 'blob',
       });
 
-      const url = URL.createObjectURL(pdfRes.data);
+      if (!pdfRes.data || pdfRes.data.size === 0) {
+        throw new Error('Document PDF vide ou indisponible');
+      }
+
+      // Si le serveur a renvoyé du JSON d'erreur encapsulé dans un blob
+      if (pdfRes.data.type && pdfRes.data.type.includes('application/json')) {
+        const text = await pdfRes.data.text();
+        const jsonErr = JSON.parse(text);
+        throw new Error(jsonErr?.error?.message || 'Erreur lors du chargement de la fiche');
+      }
+
+      const pdfBlob = new Blob([pdfRes.data], { type: 'application/pdf' });
+      const url = URL.createObjectURL(pdfBlob);
       setPdfBlobUrl(url);
     } catch (err: any) {
-      const errCode = err?.response?.data?.error?.code;
+      let errCode = err?.response?.data?.error?.code;
+
+      if (!errCode && err?.response?.data instanceof Blob) {
+        try {
+          const text = await err.response.data.text();
+          const parsed = JSON.parse(text);
+          errCode = parsed?.error?.code;
+          if (parsed?.error?.message) {
+            setErrorMessage(parsed.error.message);
+          }
+        } catch {
+          // Ignorer
+        }
+      }
+
       if (errCode === 'SUBSCRIPTION_EXPIRED' || errCode === 'SUBSCRIPTION_REQUIRED') {
+        setErrorType('SUBSCRIPTION');
         setErrorMessage(
           'Votre abonnement est expiré. Activez votre forfait 200 FCFA pour consulter cette fiche.'
         );
       } else if (errCode === 'LEVEL_ACCESS_DENIED') {
+        setErrorType('LEVEL');
         setErrorMessage(
-          'Cette fiche pédagogique est réservée à un autre niveau scolaire que votre classe.'
+          'Cette fiche pédagogique est réservée à un autre niveau scolaire que votre classe principale.'
         );
       } else {
-        setErrorMessage('Impossible de charger le document pédagogique.');
+        setErrorType('GENERAL');
+        setErrorMessage(
+          err?.response?.data?.error?.message ||
+          err?.message ||
+          'Impossible de charger le document pédagogique.'
+        );
       }
     } finally {
       setIsLoading(false);
@@ -179,31 +237,15 @@ export const LessonDetailPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Message de Blocage d'Accès si Abonnement Expiré ou Accès Refusé */}
+      {/* Message de Blocage d'Accès si Abonnement Expiré, Accès Refusé ou Erreur */}
       {errorMessage && (
-        <div className="p-6 sm:p-8 bg-background-card rounded-2xl border border-border-default shadow-card text-center space-y-4 max-w-lg mx-auto my-8">
-          <div className="w-12 h-12 rounded-2xl bg-status-danger-bg text-status-danger-badge flex items-center justify-center mx-auto">
-            <AlertCircle className="w-6 h-6" />
-          </div>
-          <h2 className="text-lg font-bold text-text-primary">Accès Restreint</h2>
-          <p className="text-xs sm:text-sm text-text-secondary">{errorMessage}</p>
-
-          <div className="pt-2 flex justify-center gap-3">
-            <Button variant="outline" size="sm" onClick={() => navigate('/fiches')}>
-              Retour aux fiches
-            </Button>
-            {subscription?.status !== 'ACTIVE' && (
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={openPayModal}
-                leftIcon={<CreditCard className="w-4 h-4" />}
-              >
-                Activer (200 FCFA)
-              </Button>
-            )}
-          </div>
-        </div>
+        <LessonAccessBlocked
+          errorType={errorType}
+          errorMessage={errorMessage}
+          onBack={() => navigate('/fiches')}
+          onRetry={loadLessonPdf}
+          onOpenPayModal={openPayModal}
+        />
       )}
 
       {/* Visionneuse PDF */}

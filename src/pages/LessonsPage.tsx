@@ -113,7 +113,7 @@ export const LessonsPage: React.FC = () => {
     if (!lessonId) throw new Error('Identifiant de fiche introuvable');
 
     const accessRes = await apiClient.post(`/lessons/${lessonId}/access`);
-    const streamToken = accessRes.data?.data?.accessToken;
+    const streamToken = accessRes.data?.data?.accessToken || accessRes.data?.data?.token;
 
     const pdfRes = await apiClient.get(`/lessons/${lessonId}/stream`, {
       params: { token: streamToken },
