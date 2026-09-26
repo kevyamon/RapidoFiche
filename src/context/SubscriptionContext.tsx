@@ -102,20 +102,24 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     checkSubscription();
   }, [checkSubscription]);
 
-  // Détection automatique du retour de paiement GeniusPay
+  const verifiedRefTracker = React.useRef<Set<string>>(new Set());
+
+  // Détection automatique du retour de paiement GeniusPay (sécurisée et unique)
   useEffect(() => {
     if (!isAuthenticated) return;
 
     const params = new URLSearchParams(window.location.search);
     const paymentStatus = params.get('payment');
-    const ref = params.get('reference') || params.get('ref');
+    const ref = params.get('reference') || params.get('ref') || 'default_ref';
 
-    if (paymentStatus === 'success' || ref) {
-      verifyPayment(ref || undefined).then((result) => {
-        if (result.success) {
+    if (paymentStatus === 'success' || (ref && ref !== 'default_ref')) {
+      const key = `${paymentStatus}_${ref}`;
+      if (!verifiedRefTracker.current.has(key)) {
+        verifiedRefTracker.current.add(key);
+        verifyPayment(ref !== 'default_ref' ? ref : undefined).then(() => {
           window.history.replaceState({}, document.title, window.location.pathname);
-        }
-      });
+        });
+      }
     } else if (paymentStatus === 'cancelled') {
       window.history.replaceState({}, document.title, window.location.pathname);
     }

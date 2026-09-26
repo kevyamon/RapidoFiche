@@ -24,22 +24,26 @@ export const LessonDetailPage: React.FC = () => {
   const [isOfflineSaved, setIsOfflineSaved] = useState<boolean>(false);
   const [isFavorite, setIsFavorite] = useState<boolean>(false);
 
-  // Vérification immédiate si retour de paiement avec query param
+  const hasVerifiedRef = React.useRef<boolean>(false);
+
+  // Vérification unique si retour de paiement avec query param
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const paymentStatus = params.get('payment');
     const ref = params.get('reference') || params.get('ref');
 
-    if (paymentStatus === 'success' || ref) {
+    if ((paymentStatus === 'success' || ref) && !hasVerifiedRef.current) {
+      hasVerifiedRef.current = true;
       info('Validation de votre paiement en cours...');
       verifyPayment(ref || undefined).then((res) => {
         if (res.success) {
           success('Votre forfait 30 jours est activé ! Chargement du document...');
           setErrorMessage(null);
+          navigate(location.pathname, { replace: true });
         }
       });
     }
-  }, [location.search, verifyPayment, success, info]);
+  }, [location.search, location.pathname, navigate, verifyPayment, success, info]);
 
   const loadLessonPdf = useCallback(async () => {
     if (!id) return;
@@ -175,7 +179,7 @@ export const LessonDetailPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Message de Blocage d'Accès si Abonnement Expiré */}
+      {/* Message de Blocage d'Accès si Abonnement Expiré ou Accès Refusé */}
       {errorMessage && (
         <div className="p-6 sm:p-8 bg-background-card rounded-2xl border border-border-default shadow-card text-center space-y-4 max-w-lg mx-auto my-8">
           <div className="w-12 h-12 rounded-2xl bg-status-danger-bg text-status-danger-badge flex items-center justify-center mx-auto">
@@ -188,14 +192,16 @@ export const LessonDetailPage: React.FC = () => {
             <Button variant="outline" size="sm" onClick={() => navigate('/fiches')}>
               Retour aux fiches
             </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={openPayModal}
-              leftIcon={<CreditCard className="w-4 h-4" />}
-            >
-              Activer (200 FCFA)
-            </Button>
+            {subscription?.status !== 'ACTIVE' && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={openPayModal}
+                leftIcon={<CreditCard className="w-4 h-4" />}
+              >
+                Activer (200 FCFA)
+              </Button>
+            )}
           </div>
         </div>
       )}

@@ -188,11 +188,17 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({
               {`@media print { body, html, #root { display: none !important; visibility: hidden !important; } }`}
             </style>
 
-            <iframe
-              src={`${pdfBlobUrl}#toolbar=0&navpanes=0&scrollbar=1`}
-              title={title}
+            <object
+              data={`${pdfBlobUrl}#toolbar=0&navpanes=0&scrollbar=1`}
+              type="application/pdf"
               className="w-full h-full rounded-lg bg-white shadow-card border border-border-default"
-            />
+            >
+              <iframe
+                src={`${pdfBlobUrl}#toolbar=0&navpanes=0&scrollbar=1`}
+                title={title}
+                className="w-full h-full rounded-lg bg-white shadow-card border border-border-default"
+              />
+            </object>
 
             {/* Filigrane Dynamique Anti-Capture / Anti-Fuite */}
             <div

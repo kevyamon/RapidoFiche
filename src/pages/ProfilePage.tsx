@@ -6,10 +6,8 @@ import {
   CreditCard,
   LogOut,
   CheckCircle,
-  Clock,
   Edit3,
   KeyRound,
-  RotateCw,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSubscription } from '../context/SubscriptionContext';
@@ -17,16 +15,8 @@ import { apiClient } from '../api/client';
 import { Button } from '../components/ui/Button';
 import { EditProfileModal } from '../components/profile/EditProfileModal';
 import { ChangePasswordModal } from '../components/profile/ChangePasswordModal';
+import { ProfilePaymentsHistory, PaymentItem } from '../components/profile/ProfilePaymentsHistory';
 import { useToast } from '../components/ui/Toast';
-
-interface PaymentItem {
-  id: string;
-  reference: string;
-  amount: number;
-  status: 'SUCCESS' | 'COMPLETED' | 'PENDING' | 'FAILED' | 'CREATED';
-  createdAt: string;
-  provider: string;
-}
 
 export const ProfilePage: React.FC = () => {
   const { user, logout } = useAuth();
@@ -188,78 +178,32 @@ export const ProfilePage: React.FC = () => {
               Accès illimité en ligne et hors-ligne à toutes les fiches de votre classe.
             </p>
           </div>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={openPayModal}
-            leftIcon={<CreditCard className="w-4 h-4" />}
-            className="shrink-0"
-          >
-            {isSubActive ? 'Prolonger (200 F)' : 'Activer (200 F)'}
-          </Button>
+
+          {!isSubActive ? (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={openPayModal}
+              leftIcon={<CreditCard className="w-4 h-4" />}
+              className="shrink-0"
+            >
+              Activer (200 FCFA)
+            </Button>
+          ) : (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-status-success-bg text-status-success-text text-xs font-bold border border-status-success-border shrink-0">
+              <CheckCircle className="w-4 h-4 text-status-success-badge" />
+              <span>Forfait actif</span>
+            </div>
+          )}
         </div>
       </div>
 
       {/* 3. Historique des Transactions */}
-      {payments.length > 0 && (
-        <div className="bg-background-card rounded-2xl border border-border-default p-5 sm:p-6 shadow-card space-y-3">
-          <div className="flex items-center gap-2 mb-2">
-            <Clock className="w-5 h-5 text-primary-600" />
-            <h2 className="text-base font-bold text-text-primary">Historique des Paiements</h2>
-          </div>
-
-          <div className="divide-y divide-border-subtle">
-            {payments.map((p) => {
-              const isPaid = p.status === 'SUCCESS' || p.status === 'COMPLETED';
-              const isPending = p.status === 'PENDING' || p.status === 'CREATED';
-
-              return (
-                <div key={p.id} className="py-3 flex items-center justify-between text-xs sm:text-sm">
-                  <div>
-                    <p className="font-semibold text-text-primary">Réf : {p.reference}</p>
-                    <p className="text-xs text-text-muted">
-                      {new Date(p.createdAt).toLocaleDateString('fr-FR', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric',
-                      })}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3 text-right">
-                    <div>
-                      <p className="font-bold text-text-primary">{p.amount} FCFA</p>
-                      <span
-                        className={`text-[11px] font-medium ${
-                          isPaid
-                            ? 'text-status-success-text'
-                            : isPending
-                            ? 'text-status-warning-text'
-                            : 'text-status-danger-text'
-                        }`}
-                      >
-                        {isPaid ? 'Payé' : isPending ? 'En attente' : 'Échoué'}
-                      </span>
-                    </div>
-
-                    {isPending && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleVerify(p.reference)}
-                        isLoading={verifyingId === p.reference}
-                        leftIcon={<RotateCw className="w-3.5 h-3.5" />}
-                        className="text-xs py-1 px-2 h-7"
-                      >
-                        Vérifier
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+      <ProfilePaymentsHistory
+        payments={payments}
+        onVerify={handleVerify}
+        verifyingId={verifyingId}
+      />
 
       {/* 4. Déconnexion */}
       <div className="pt-2">
