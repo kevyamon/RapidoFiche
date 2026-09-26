@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { HardDriveDownload, Bookmark, CreditCard, AlertCircle } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { offlineStorage } from '../services/offline.storage';
@@ -12,9 +12,10 @@ import { useToast } from '../components/ui/Toast';
 export const LessonDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
-  const { subscription, openPayModal } = useSubscription();
-  const { success, error: toastError } = useToast();
+  const { subscription, openPayModal, verifyPayment } = useSubscription();
+  const { success, error: toastError, info } = useToast();
 
   const [title, setTitle] = useState<string>('Fiche Pédagogique');
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
@@ -23,78 +24,85 @@ export const LessonDetailPage: React.FC = () => {
   const [isOfflineSaved, setIsOfflineSaved] = useState<boolean>(false);
   const [isFavorite, setIsFavorite] = useState<boolean>(false);
 
+  // Vérification immédiate si retour de paiement avec query param
   useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const paymentStatus = params.get('payment');
+    const ref = params.get('reference') || params.get('ref');
+
+    if (paymentStatus === 'success' || ref) {
+      info('Validation de votre paiement en cours...');
+      verifyPayment(ref || undefined).then((res) => {
+        if (res.success) {
+          success('Votre forfait 30 jours est activé ! Chargement du document...');
+          setErrorMessage(null);
+        }
+      });
+    }
+  }, [location.search, verifyPayment, success, info]);
+
+  const loadLessonPdf = useCallback(async () => {
     if (!id) return;
 
-    let blobUrlToRevoke: string | null = null;
+    try {
+      setIsLoading(true);
+      setErrorMessage(null);
 
-    const loadLessonPdf = async () => {
-      try {
-        setIsLoading(true);
-        setErrorMessage(null);
-
-        // 1. Vérifier si la fiche est stockée hors-ligne
-        const localItem = await offlineStorage.getLesson(id);
-        if (localItem) {
-          setIsOfflineSaved(true);
-          setTitle(localItem.lessonData.title);
-          const url = URL.createObjectURL(localItem.pdfBlob);
-          blobUrlToRevoke = url;
-          setPdfBlobUrl(url);
-          setIsLoading(false);
-          return;
-        }
-
-        // 2. Si non stockée localement, vérifier le réseau et demander l'accès
-        if (!navigator.onLine) {
-          setErrorMessage(
-            'Vous êtes actuellement hors-ligne et cette fiche n’a pas été sauvegardée localement.'
-          );
-          setIsLoading(false);
-          return;
-        }
-
-        // Demande de jeton d'accès sécurisé (Mode Forteresse)
-        const accessRes = await apiClient.post(`/lessons/${id}/access`);
-        const { lesson, accessToken } = accessRes.data.data;
-        setTitle(lesson.title);
-        setIsFavorite(!!lesson.isFavorite);
-
-        // Récupération du flux PDF binaire
-        const pdfRes = await apiClient.get(`/lessons/${id}/stream`, {
-          params: { token: accessToken },
-          responseType: 'blob',
-        });
-
-        const url = URL.createObjectURL(pdfRes.data);
-        blobUrlToRevoke = url;
+      // 1. Vérifier si la fiche est stockée hors-ligne
+      const localItem = await offlineStorage.getLesson(id);
+      if (localItem) {
+        setIsOfflineSaved(true);
+        setTitle(localItem.lessonData.title);
+        const url = URL.createObjectURL(localItem.pdfBlob);
         setPdfBlobUrl(url);
-      } catch (err: any) {
-        const errCode = err?.response?.data?.error?.code;
-        if (errCode === 'SUBSCRIPTION_EXPIRED' || errCode === 'SUBSCRIPTION_REQUIRED') {
-          setErrorMessage(
-            'Votre abonnement est expiré. Activez votre forfait 200 FCFA pour consulter cette fiche.'
-          );
-        } else if (errCode === 'LEVEL_ACCESS_DENIED') {
-          setErrorMessage(
-            'Cette fiche pédagogique est réservée à un autre niveau scolaire que votre classe.'
-          );
-        } else {
-          setErrorMessage('Impossible de charger le document pédagogique.');
-        }
-      } finally {
         setIsLoading(false);
+        return;
       }
-    };
 
-    loadLessonPdf();
-
-    return () => {
-      if (blobUrlToRevoke) {
-        URL.revokeObjectURL(blobUrlToRevoke);
+      // 2. Si non stockée localement, vérifier le réseau et demander l'accès
+      if (!navigator.onLine) {
+        setErrorMessage(
+          'Vous êtes actuellement hors-ligne et cette fiche n’a pas été sauvegardée localement.'
+        );
+        setIsLoading(false);
+        return;
       }
-    };
+
+      // Demande de jeton d'accès sécurisé (Mode Forteresse)
+      const accessRes = await apiClient.post(`/lessons/${id}/access`);
+      const { lesson, accessToken } = accessRes.data.data;
+      setTitle(lesson.title);
+      setIsFavorite(!!lesson.isFavorite);
+
+      // Récupération du flux PDF binaire
+      const pdfRes = await apiClient.get(`/lessons/${id}/stream`, {
+        params: { token: accessToken },
+        responseType: 'blob',
+      });
+
+      const url = URL.createObjectURL(pdfRes.data);
+      setPdfBlobUrl(url);
+    } catch (err: any) {
+      const errCode = err?.response?.data?.error?.code;
+      if (errCode === 'SUBSCRIPTION_EXPIRED' || errCode === 'SUBSCRIPTION_REQUIRED') {
+        setErrorMessage(
+          'Votre abonnement est expiré. Activez votre forfait 200 FCFA pour consulter cette fiche.'
+        );
+      } else if (errCode === 'LEVEL_ACCESS_DENIED') {
+        setErrorMessage(
+          'Cette fiche pédagogique est réservée à un autre niveau scolaire que votre classe.'
+        );
+      } else {
+        setErrorMessage('Impossible de charger le document pédagogique.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
   }, [id]);
+
+  useEffect(() => {
+    loadLessonPdf();
+  }, [loadLessonPdf, subscription?.status]);
 
   const handleToggleFavorite = async () => {
     if (!id) return;
