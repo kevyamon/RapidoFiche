@@ -65,6 +65,9 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [isPayModalOpen, setIsPayModalOpen] = useState<boolean>(false);
   const retryTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  const subscriptionRef = useRef<SubscriptionData | null>(subscription);
+  subscriptionRef.current = subscription;
+
   const checkSubscription = useCallback(
     async (isSilent = false) => {
       if (!isAuthenticated) {
@@ -74,7 +77,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       }
 
       try {
-        if (!isSilent && !subscription) {
+        if (!isSilent && !subscriptionRef.current) {
           setIsLoading(true);
         }
         const response = await apiClient.get('/me/subscription');
@@ -117,7 +120,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         setIsLoading(false);
       }
     },
-    [isAuthenticated, subscription]
+    [isAuthenticated]
   );
 
   const verifyPayment = useCallback(

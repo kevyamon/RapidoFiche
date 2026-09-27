@@ -122,6 +122,29 @@ apiClient.interceptors.response.use(
       }
     }
 
+    // Gestion de la veille Render (Cold Start 502/503/504 ou Timeout sur les requêtes GET)
+    const isColdStart =
+      !error.response ||
+      error.code === 'ECONNABORTED' ||
+      error.message?.includes('Network Error') ||
+      error.response?.status === 502 ||
+      error.response?.status === 503 ||
+      error.response?.status === 504;
+
+    const requestWithRetry = originalRequest as (InternalAxiosRequestConfig & { _coldRetryCount?: number }) | undefined;
+
+    if (
+      isColdStart &&
+      requestWithRetry &&
+      requestWithRetry.method?.toLowerCase() === 'get' &&
+      (!requestWithRetry._coldRetryCount || requestWithRetry._coldRetryCount < 2)
+    ) {
+      requestWithRetry._coldRetryCount = (requestWithRetry._coldRetryCount || 0) + 1;
+      const delayMs = requestWithRetry._coldRetryCount * 2000;
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+      return apiClient(requestWithRetry);
+    }
+
     return Promise.reject(error);
   }
 );

@@ -57,6 +57,9 @@ export const LessonsPage: React.FC = () => {
     fetchSubjects();
   }, [user]);
 
+  const errorRef = React.useRef(error);
+  errorRef.current = error;
+
   // Charger les fiches avec filtres et pagination
   const fetchLessons = useCallback(
     async (pageNumber = 1) => {
@@ -79,13 +82,15 @@ export const LessonsPage: React.FC = () => {
             setPagination(res.data.pagination);
           }
         }
-      } catch (err: unknown) {
-        error('Impossible de charger les fiches pédagogiques');
+      } catch (err: any) {
+        if (err?.response?.status !== 401 && err?.response?.status !== 429) {
+          errorRef.current('Impossible de charger les fiches pédagogiques');
+        }
       } finally {
         setIsLoading(false);
       }
     },
-    [filters, error]
+    [filters]
   );
 
   useEffect(() => {
