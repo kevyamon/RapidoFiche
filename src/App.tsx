@@ -6,6 +6,7 @@ import { AdminAuthProvider } from './context/AdminAuthContext';
 import { SocketProvider } from './context/SocketContext';
 import { AdminAuthModal } from './components/admin/auth/AdminAuthModal';
 import { AdminManagerOverlay } from './components/admin/AdminManagerOverlay';
+import { PwaInstallModal } from './components/common/PwaInstallModal';
 import { AppRouter } from './routes/AppRouter';
 
 import { ErrorBoundary } from './components/common/ErrorBoundary';
@@ -22,6 +23,8 @@ export const App: React.FC = () => {
                 {/* Portails d'Administration Furtive Globaux */}
                 <AdminAuthModal />
                 <AdminManagerOverlay />
+                {/* Modale d'Installation PWA Mobile */}
+                <PwaInstallModal />
               </SocketProvider>
             </SubscriptionProvider>
           </AdminAuthProvider>

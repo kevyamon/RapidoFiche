@@ -5,18 +5,104 @@
     <link rel="icon" type="image/png" href="/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="theme-color" content="#0066C7" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="RapidoFiche" />
+    <meta name="application-name" content="RapidoFiche" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+
+    <!-- SEO Meta Tags Primaires -->
+    <title>RapidoFiche — Fiches Pédagogiques Numériques Préscolaire & Primaire</title>
     <meta
       name="description"
-      content="RapidoFiche — Bibliothèque Pédagogique Numérique pour les Enseignants du Préscolaire et du Primaire en Côte d’Ivoire."
+      content="RapidoFiche est la plateforme pédagogique de référence en Côte d’Ivoire : fiches de cours conformes au programme MENA du préscolaire (PS, MS, GS) au primaire (CP1, CP2, CE1, CE2, CM1, CM2). Consultation rapide et hors-ligne pour enseignants."
     />
+    <meta
+      name="keywords"
+      content="fiches pedagogiques, fiches de cours primaire, fiches prescolaire cote d'ivoire, fiches pedagogiques cp1 cp2 ce1 ce2 cm1 cm2, preparation cours enseignant, programme educatif ivoirien mena, fiches mathematiques francais sciences primaire, cours maternel abidjan, rapidofiche, rapido fiche"
+    />
+    <meta name="author" content="RapidoFiche EdTech" />
+    <link rel="canonical" href="https://rapidofiche.com/" />
+
+    <!-- Open Graph / Facebook / WhatsApp -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://rapidofiche.com/" />
+    <meta property="og:site_name" content="RapidoFiche" />
+    <meta property="og:title" content="RapidoFiche — Fiches Pédagogiques Numériques Préscolaire & Primaire" />
+    <meta property="og:description" content="Accédez à l'intégralité des fiches pédagogiques officielles du préscolaire et du primaire en Côte d’Ivoire. Préparation de cours simplifiée et consultation hors-ligne." />
+    <meta property="og:image" content="https://rapidofiche.com/logo.png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:image:alt" content="Logo officiel RapidoFiche" />
+    <meta property="og:locale" content="fr_CI" />
+    <meta property="og:locale:alternate" content="fr_FR" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://rapidofiche.com/" />
+    <meta name="twitter:title" content="RapidoFiche — Fiches Pédagogiques Numériques" />
+    <meta name="twitter:description" content="Bibliothèque pédagogique pour enseignants du préscolaire et primaire : fiches de leçons conformes, consultation fluide et hors-ligne." />
+    <meta name="twitter:image" content="https://rapidofiche.com/logo.png" />
+
+    <!-- Icônes & Manifeste -->
     <link rel="apple-touch-icon" href="/logo.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/logo.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/pwa-192x192.png" />
+    <link rel="apple-touch-icon" sizes="512x512" href="/pwa-512x512.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <title>RapidoFiche — Bibliothèque Pédagogique Numérique</title>
+
+    <!-- Données structurées Schema.org JSON-LD pour Google Search Console -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "EducationalOrganization",
+            "@id": "https://rapidofiche.com/#organization",
+            "name": "RapidoFiche",
+            "url": "https://rapidofiche.com",
+            "logo": "https://rapidofiche.com/logo.png",
+            "description": "Plateforme EdTech de diffusion de fiches pédagogiques numériques conformes aux programmes scolaires pour enseignants du préscolaire et primaire.",
+            "areaServed": "CI",
+            "sameAs": []
+          },
+          {
+            "@type": "WebApplication",
+            "@id": "https://rapidofiche.com/#webapp",
+            "name": "RapidoFiche PWA",
+            "url": "https://rapidofiche.com",
+            "applicationCategory": "EducationalApplication",
+            "operatingSystem": "All",
+            "offers": {
+              "@type": "Offer",
+              "price": "200",
+              "priceCurrency": "XOF",
+              "availability": "https://schema.org/InStock"
+            }
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://rapidofiche.com/#website",
+            "url": "https://rapidofiche.com",
+            "name": "RapidoFiche",
+            "publisher": {
+              "@id": "https://rapidofiche.com/#organization"
+            },
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": "https://rapidofiche.com/fiches?search={search_term_string}",
+              "query-input": "required name=search_term_string"
+            }
+          }
+        ]
+      }
+    </script>
   </head>
   <body class="bg-background-main text-text-primary antialiased min-h-screen">
     <div id="root"></div>

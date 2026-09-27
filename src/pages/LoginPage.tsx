@@ -5,8 +5,15 @@ import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
 
 import { StealthLogoTrigger } from '../components/common/StealthLogoTrigger';
+import { useSeo } from '../hooks/useSeo';
 
 export const LoginPage: React.FC = () => {
+  useSeo({
+    title: 'Connexion Enseignant',
+    description: 'Connectez-vous à votre espace RapidoFiche pour accéder à l’ensemble des fiches pédagogiques de votre niveau de classe.',
+    canonicalPath: '/login',
+  });
+
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();

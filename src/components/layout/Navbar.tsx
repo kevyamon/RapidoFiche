@@ -9,14 +9,17 @@ import {
   ChevronDown,
   LogOut,
   User as UserIcon,
+  Download,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useSubscription } from '../../context/SubscriptionContext';
+import { usePwaInstall } from '../../hooks/usePwaInstall';
 import { StealthLogoTrigger } from '../common/StealthLogoTrigger';
 
 export const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
   const { subscription, openPayModal } = useSubscription();
+  const { canInstall, isInstalled, openModal: openInstallModal } = usePwaInstall();
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
@@ -153,6 +156,17 @@ export const Navbar: React.FC = () => {
                     <UserIcon className="w-4 h-4 text-text-muted" />
                     <span>Mon Profil & Abonnement</span>
                   </Link>
+
+                  {canInstall && !isInstalled && (
+                    <button
+                      type="button"
+                      onClick={() => openInstallModal()}
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-primary-600 hover:bg-primary-50 transition-colors text-left font-medium"
+                    >
+                      <Download className="w-4 h-4 text-primary-500" />
+                      <span>Installer l'application</span>
+                    </button>
+                  )}
 
                   <button
                     onClick={handleLogout}

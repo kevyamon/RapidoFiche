@@ -1,0 +1,22 @@
+# robots.txt pour RapidoFiche — Bibliothèque Pédagogique Numérique
+# Optimisé pour Googlebot, Bingbot, Applebot et moteurs de recherche francophones
+
+User-agent: *
+Allow: /
+Allow: /fiches
+Allow: /fiches/*
+Allow: /connexion
+Allow: /inscription
+Allow: /login
+Allow: /register
+Allow: /logo.png
+Allow: /assets/
+Allow: /manifest.webmanifest
+
+# Protection des sections privées et routes API internes
+Disallow: /admin*
+Disallow: /api/
+Disallow: /stealth*
+
+# Sitemap XML officiel pour Google Search Console
+Sitemap: https://rapidofiche.com/sitemap.xml

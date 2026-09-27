@@ -10,8 +10,15 @@ import { LessonGrid, PaginationInfo } from '../components/lessons/LessonGrid';
 import { LessonSummary } from '../components/lessons/LessonCard';
 import { offlineStorage } from '../services/offline.storage';
 import { useToast } from '../components/ui/Toast';
+import { useSeo } from '../hooks/useSeo';
 
 export const LessonsPage: React.FC = () => {
+  useSeo({
+    title: 'Catalogue des Fiches Pédagogiques',
+    description: 'Explorez la bibliothèque complète des fiches pédagogiques préscolaire et primaire : mathématiques, français, sciences, histoire-géo, conformes au programme MENA.',
+    canonicalPath: '/fiches',
+  });
+
   const { user } = useAuth();
   const { subscription, openPayModal } = useSubscription();
   const { error } = useToast();

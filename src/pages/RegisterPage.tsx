@@ -6,8 +6,15 @@ import { LevelSelector } from '../components/common/LevelSelector';
 import { Button } from '../components/ui/Button';
 
 import { StealthLogoTrigger } from '../components/common/StealthLogoTrigger';
+import { useSeo } from '../hooks/useSeo';
 
 export const RegisterPage: React.FC = () => {
+  useSeo({
+    title: 'Inscription Enseignant — Créez votre compte',
+    description: 'Rejoignez RapidoFiche et accédez immédiatement aux fiches pédagogiques de votre niveau de classe (Préscolaire et Primaire).',
+    canonicalPath: '/register',
+  });
+
   const { register } = useAuth();
   const navigate = useNavigate();
 

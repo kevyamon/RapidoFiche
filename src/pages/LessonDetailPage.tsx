@@ -8,6 +8,7 @@ import { PdfViewer } from '../components/viewer/PdfViewer';
 import { LessonActionHeader } from '../components/lessons/LessonActionHeader';
 import { LessonAccessBlocked } from '../components/lessons/LessonAccessBlocked';
 import { useToast } from '../components/ui/Toast';
+import { useSeo } from '../hooks/useSeo';
 
 export const LessonDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -18,6 +19,13 @@ export const LessonDetailPage: React.FC = () => {
   const { success, error: toastError, info } = useToast();
 
   const [title, setTitle] = useState<string>('Fiche Pédagogique');
+
+  useSeo({
+    title: title || 'Fiche Pédagogique Numérique',
+    description: `Consultez la fiche pédagogique ${title} : préparation de cours, objectifs d'apprentissage et déroulement didactique.`,
+    canonicalPath: `/fiches/${id || ''}`,
+    ogType: 'article',
+  });
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);

@@ -4,8 +4,15 @@ import { apiClient } from '../api/client';
 import { LessonCard, LessonSummary } from '../components/lessons/LessonCard';
 import { useToast } from '../components/ui/Toast';
 import { useSocketEvent } from '../context/SocketContext';
+import { useSeo } from '../hooks/useSeo';
 
 export const FavoritesPage: React.FC = () => {
+  useSeo({
+    title: 'Mes Fiches Favorites',
+    description: 'Consultez rapidement l’ensemble de vos fiches pédagogiques épinglées et organisées pour vos préparations de cours.',
+    canonicalPath: '/favoris',
+  });
+
   const [favorites, setFavorites] = useState<LessonSummary[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const { success } = useToast();

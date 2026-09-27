@@ -6,6 +6,7 @@ import { useSubscription } from '../context/SubscriptionContext';
 import { apiClient } from '../api/client';
 import { LessonCard, LessonSummary } from '../components/lessons/LessonCard';
 import { Button } from '../components/ui/Button';
+import { useSeo } from '../hooks/useSeo';
 
 interface SubjectItem {
   id: string;
@@ -15,6 +16,12 @@ interface SubjectItem {
 }
 
 export const HomePage: React.FC = () => {
+  useSeo({
+    title: 'Tableau de Bord Enseignant',
+    description: 'Accédez aux fiches pédagogiques officielles du préscolaire et du primaire en Côte d’Ivoire. Préparation de cours rapide et consultation hors-ligne.',
+    canonicalPath: '/',
+  });
+
   const { user } = useAuth();
   const { subscription, openPayModal } = useSubscription();
   const navigate = useNavigate();

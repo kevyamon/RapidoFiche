@@ -17,8 +17,15 @@ import { EditProfileModal } from '../components/profile/EditProfileModal';
 import { ChangePasswordModal } from '../components/profile/ChangePasswordModal';
 import { ProfilePaymentsHistory, PaymentItem } from '../components/profile/ProfilePaymentsHistory';
 import { useToast } from '../components/ui/Toast';
+import { useSeo } from '../hooks/useSeo';
 
 export const ProfilePage: React.FC = () => {
+  useSeo({
+    title: 'Mon Profil & Abonnement',
+    description: 'Gérez votre compte enseignant RapidoFiche, votre niveau de classe et vos informations d’abonnement.',
+    canonicalPath: '/profil',
+  });
+
   const { user, logout } = useAuth();
   const { subscription, openPayModal, verifyPayment, checkSubscription } = useSubscription();
   const { success, error: toastError, info } = useToast();

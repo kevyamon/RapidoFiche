@@ -147,6 +147,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.removeItem('rapidofiche_access_token');
       localStorage.removeItem('rapidofiche_refresh_token');
       localStorage.removeItem('rapidofiche_user');
+      localStorage.removeItem('rapidofiche_subscription_cache');
       localStorage.removeItem('rapidofiche_admin_token');
       localStorage.removeItem('rapidofiche_admin_user');
     }

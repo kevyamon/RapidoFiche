@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { apiClient } from '../api/client';
 import { useAuth } from './AuthContext';
 
@@ -25,41 +25,100 @@ interface SubscriptionContextValue {
   isPayModalOpen: boolean;
   openPayModal: () => void;
   closePayModal: () => void;
-  checkSubscription: () => Promise<void>;
+  checkSubscription: (isSilent?: boolean) => Promise<void>;
   verifyPayment: (reference?: string) => Promise<VerifyPaymentResult>;
   initiateSubscriptionPayment: (phoneNumber?: string) => Promise<{ checkoutUrl: string; reference: string }>;
 }
+
+const SUBSCRIPTION_CACHE_KEY = 'rapidofiche_subscription_cache';
+
+const loadCachedSubscription = (): SubscriptionData | null => {
+  try {
+    const cached = localStorage.getItem(SUBSCRIPTION_CACHE_KEY);
+    if (!cached) return null;
+    const parsed: SubscriptionData = JSON.parse(cached);
+    if (parsed.status === 'ACTIVE') {
+      if (parsed.endDate) {
+        const end = new Date(parsed.endDate).getTime();
+        const now = Date.now();
+        if (end < now) {
+          return { ...parsed, status: 'EXPIRED', daysRemaining: 0 };
+        }
+        const daysRemaining = Math.max(0, Math.ceil((end - now) / (1000 * 60 * 60 * 24)));
+        return { ...parsed, daysRemaining };
+      }
+      return parsed;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+};
 
 const SubscriptionContext = createContext<SubscriptionContextValue | undefined>(undefined);
 
 export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
-  const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
+  const [subscription, setSubscription] = useState<SubscriptionData | null>(() => loadCachedSubscription());
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isVerifyingPayment, setIsVerifyingPayment] = useState<boolean>(false);
   const [isPayModalOpen, setIsPayModalOpen] = useState<boolean>(false);
+  const retryTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const checkSubscription = useCallback(async () => {
-    if (!isAuthenticated) {
-      setSubscription(null);
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      const response = await apiClient.get('/me/subscription');
-      if (response.data?.success) {
-        setSubscription(response.data.data);
+  const checkSubscription = useCallback(
+    async (isSilent = false) => {
+      if (!isAuthenticated) {
+        setSubscription(null);
+        localStorage.removeItem(SUBSCRIPTION_CACHE_KEY);
+        return;
       }
-    } catch {
-      setSubscription({
-        hasSubscription: false,
-        status: 'NONE',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [isAuthenticated]);
+
+      try {
+        if (!isSilent && !subscription) {
+          setIsLoading(true);
+        }
+        const response = await apiClient.get('/me/subscription');
+        if (response.data?.success) {
+          const data: SubscriptionData = response.data.data;
+          setSubscription(data);
+          localStorage.setItem(SUBSCRIPTION_CACHE_KEY, JSON.stringify(data));
+        }
+      } catch (err: any) {
+        const isColdStartOrNetworkError =
+          !err?.response ||
+          err?.code === 'ECONNABORTED' ||
+          err?.message?.includes('Network Error') ||
+          err?.response?.status === 502 ||
+          err?.response?.status === 503 ||
+          err?.response?.status === 504;
+
+        const currentCache = loadCachedSubscription();
+
+        // Protection Forteresse : Si le backend est en veille, conserver le forfait valide et planifier un retry
+        if (isColdStartOrNetworkError && currentCache && currentCache.status === 'ACTIVE') {
+          setSubscription(currentCache);
+          if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+          retryTimerRef.current = setTimeout(() => {
+            checkSubscription(true);
+          }, 3500);
+          return;
+        }
+
+        if (err?.response?.status === 401) {
+          setSubscription(null);
+          localStorage.removeItem(SUBSCRIPTION_CACHE_KEY);
+        } else if (!currentCache || currentCache.status !== 'ACTIVE') {
+          setSubscription({
+            hasSubscription: false,
+            status: 'NONE',
+          });
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [isAuthenticated, subscription]
+  );
 
   const verifyPayment = useCallback(
     async (reference?: string): Promise<VerifyPaymentResult> => {
@@ -72,8 +131,9 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
           const subData = res.data?.data?.subscription;
           if (subData) {
             setSubscription(subData);
+            localStorage.setItem(SUBSCRIPTION_CACHE_KEY, JSON.stringify(subData));
           } else {
-            await checkSubscription();
+            await checkSubscription(false);
           }
           return {
             success: true,
@@ -99,10 +159,13 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
   );
 
   useEffect(() => {
-    checkSubscription();
+    checkSubscription(false);
+    return () => {
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+    };
   }, [checkSubscription]);
 
-  const verifiedRefTracker = React.useRef<Set<string>>(new Set());
+  const verifiedRefTracker = useRef<Set<string>>(new Set());
 
   // Détection automatique du retour de paiement GeniusPay (sécurisée et unique)
   useEffect(() => {
