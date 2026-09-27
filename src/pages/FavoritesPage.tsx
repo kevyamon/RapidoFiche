@@ -1,42 +1,77 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Bookmark, SearchX } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { LessonCard, LessonSummary } from '../components/lessons/LessonCard';
 import { useToast } from '../components/ui/Toast';
+import { useSocketEvent } from '../context/SocketContext';
 
 export const FavoritesPage: React.FC = () => {
   const [favorites, setFavorites] = useState<LessonSummary[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const { success } = useToast();
 
-  useEffect(() => {
-    const fetchFavorites = async () => {
-      try {
-        setIsLoading(true);
-        const res = await apiClient.get('/favorites');
-        if (res.data?.success) {
-          const items = res.data.data.map(
-            (f: { lessonId: LessonSummary }) => ({
-              ...f.lessonId,
+  const fetchFavorites = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const res = await apiClient.get('/favorites');
+      if (res.data?.success) {
+        const items = res.data.data
+          .filter((f: any) => Boolean(f?.lessonId))
+          .map((f: { lessonId: any }) => {
+            const rawLesson = f.lessonId;
+            const normalizedId = rawLesson._id?.toString() || rawLesson.id || '';
+            return {
+              ...rawLesson,
+              id: normalizedId,
+              _id: normalizedId,
               isFavorite: true,
-            })
-          );
-          setFavorites(items.filter(Boolean));
-        }
-      } catch {
-        // Ignorer
-      } finally {
-        setIsLoading(false);
+            };
+          });
+        setFavorites(items);
       }
-    };
-
-    fetchFavorites();
+    } catch {
+      // Ignorer
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
+  useEffect(() => {
+    fetchFavorites();
+  }, [fetchFavorites]);
+
+  // Synchronisation temps réel via Socket.IO
+  useSocketEvent('FAVORITE_UPDATED', (data: { lessonId: string; isFavorite: boolean }) => {
+    if (!data?.lessonId) return;
+    if (!data.isFavorite) {
+      setFavorites((prev) =>
+        prev.filter((f) => {
+          const fid = f.id || (f as any)._id?.toString() || (f as any)._id;
+          return fid !== data.lessonId;
+        })
+      );
+    } else {
+      fetchFavorites();
+    }
+  });
+
   const handleRemoveFavorite = async (lessonId: string) => {
-    await apiClient.post('/favorites/toggle', { lessonId });
-    setFavorites((prev) => prev.filter((f) => f.id !== lessonId));
+    // 1. Mise à jour optimiste immédiate dans l'interface
+    setFavorites((prev) =>
+      prev.filter((f) => {
+        const fid = f.id || (f as any)._id?.toString() || (f as any)._id;
+        return fid !== lessonId;
+      })
+    );
     success('Fiche retirée de vos favoris');
+
+    try {
+      // 2. Appel serveur sécurisé
+      await apiClient.post('/favorites/toggle', { lessonId });
+    } catch {
+      // Rollback si échec
+      fetchFavorites();
+    }
   };
 
   return (

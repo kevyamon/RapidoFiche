@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { HardDriveDownload, Bookmark } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { offlineStorage } from '../services/offline.storage';
 import { useAuth } from '../context/AuthContext';
 import { useSubscription } from '../context/SubscriptionContext';
 import { PdfViewer } from '../components/viewer/PdfViewer';
+import { LessonActionHeader } from '../components/lessons/LessonActionHeader';
 import { LessonAccessBlocked } from '../components/lessons/LessonAccessBlocked';
-import { Button } from '../components/ui/Button';
 import { useToast } from '../components/ui/Toast';
 
 export const LessonDetailPage: React.FC = () => {
@@ -48,6 +47,8 @@ export const LessonDetailPage: React.FC = () => {
 
   const [errorType, setErrorType] = useState<'SUBSCRIPTION' | 'LEVEL' | 'GENERAL' | null>(null);
 
+  const activeBlobUrlRef = React.useRef<string | null>(null);
+
   const loadLessonPdf = useCallback(async () => {
     if (!id) return;
 
@@ -61,7 +62,9 @@ export const LessonDetailPage: React.FC = () => {
       if (localItem) {
         setIsOfflineSaved(true);
         setTitle(localItem.lessonData.title);
+        if (activeBlobUrlRef.current) URL.revokeObjectURL(activeBlobUrlRef.current);
         const url = URL.createObjectURL(localItem.pdfBlob);
+        activeBlobUrlRef.current = url;
         setPdfBlobUrl(url);
         setIsLoading(false);
         return;
@@ -91,7 +94,7 @@ export const LessonDetailPage: React.FC = () => {
             setTitle(detailRes.data.data.title);
           }
         } catch {
-          // Ignorer l'échec de récupération du titre secondaire
+          // Ignorer
         }
       }
 
@@ -120,8 +123,10 @@ export const LessonDetailPage: React.FC = () => {
         throw new Error(jsonErr?.error?.message || 'Erreur lors du chargement de la fiche');
       }
 
+      if (activeBlobUrlRef.current) URL.revokeObjectURL(activeBlobUrlRef.current);
       const pdfBlob = new Blob([pdfRes.data], { type: 'application/pdf' });
       const url = URL.createObjectURL(pdfBlob);
+      activeBlobUrlRef.current = url;
       setPdfBlobUrl(url);
     } catch (err: any) {
       let errCode = err?.response?.data?.error?.code;
@@ -164,7 +169,12 @@ export const LessonDetailPage: React.FC = () => {
 
   useEffect(() => {
     loadLessonPdf();
-  }, [loadLessonPdf, subscription?.status]);
+    return () => {
+      if (activeBlobUrlRef.current) {
+        URL.revokeObjectURL(activeBlobUrlRef.current);
+      }
+    };
+  }, [loadLessonPdf]);
 
   const handleToggleFavorite = async () => {
     if (!id) return;
@@ -203,39 +213,14 @@ export const LessonDetailPage: React.FC = () => {
   return (
     <div className="space-y-4 animate-fade-in">
       {/* Barre d'Actions de la Fiche */}
-      <div className="flex items-center justify-between gap-3 bg-background-card p-4 rounded-xl border border-border-default shadow-subtle">
-        <h1 className="text-base sm:text-lg font-bold text-text-primary truncate">
-          {title}
-        </h1>
-
-        <div className="flex items-center gap-2 shrink-0">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleToggleFavorite}
-            leftIcon={
-              <Bookmark className={`w-4 h-4 ${isFavorite ? 'fill-current text-secondary-600' : ''}`} />
-            }
-          >
-            <span className="hidden sm:inline">
-              {isFavorite ? 'Enregistrée' : 'Favoris'}
-            </span>
-          </Button>
-
-          {subscription?.status === 'ACTIVE' && (
-            <Button
-              variant={isOfflineSaved ? 'outline' : 'primary'}
-              size="sm"
-              onClick={handleToggleOffline}
-              leftIcon={<HardDriveDownload className="w-4 h-4" />}
-            >
-              <span className="hidden sm:inline">
-                {isOfflineSaved ? 'Sauvegardée' : 'Sauvegarder'}
-              </span>
-            </Button>
-          )}
-        </div>
-      </div>
+      <LessonActionHeader
+        title={title}
+        isFavorite={isFavorite}
+        isOfflineSaved={isOfflineSaved}
+        isSubscriptionActive={subscription?.status === 'ACTIVE'}
+        onToggleFavorite={handleToggleFavorite}
+        onToggleOffline={handleToggleOffline}
+      />
 
       {/* Message de Blocage d'Accès si Abonnement Expiré, Accès Refusé ou Erreur */}
       {errorMessage && (

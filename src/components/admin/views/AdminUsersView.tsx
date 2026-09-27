@@ -3,6 +3,7 @@ import { Users, Search, ShieldAlert, GraduationCap, Loader2, RefreshCw, X } from
 import { AdminService, AdminUserItem } from '../../../services/admin.service';
 import { apiClient } from '../../../api/client';
 import { useToast } from '../../ui/Toast';
+import { useSocketEvent } from '../../../context/SocketContext';
 
 export const AdminUsersView: React.FC = () => {
   const [users, setUsers] = useState<AdminUserItem[]>([]);
@@ -29,6 +30,10 @@ export const AdminUsersView: React.FC = () => {
   useEffect(() => {
     loadUsers();
   }, [loadUsers]);
+
+  // Actualisation temps réel lors d'une nouvelle inscription ou modification de compte
+  useSocketEvent('ADMIN_USERS_UPDATED', () => loadUsers());
+  useSocketEvent('USER_REGISTERED', () => loadUsers());
 
   useEffect(() => {
     const fetchLevels = async () => {

@@ -87,6 +87,12 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({
     e.preventDefault();
   };
 
+  const [isDocumentLoaded, setIsDocumentLoaded] = useState<boolean>(false);
+
+  useEffect(() => {
+    setIsDocumentLoaded(false);
+  }, [pdfBlobUrl]);
+
   return (
     <div
       ref={containerRef}
@@ -161,8 +167,8 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({
 
       {/* Zone d'Affichage du Document */}
       <div className="flex-1 overflow-auto bg-slate-100 flex items-center justify-center p-2 sm:p-4 relative">
-        {isLoading && (
-          <div className="flex flex-col items-center gap-3 text-text-muted py-12">
+        {(isLoading || (!isDocumentLoaded && !!pdfBlobUrl)) && (
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-slate-100/90 backdrop-blur-xs text-text-muted">
             <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
             <p className="text-xs sm:text-sm font-medium">Chargement sécurisé de la fiche...</p>
           </div>
@@ -175,7 +181,7 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({
           </div>
         )}
 
-        {!isLoading && !error && pdfBlobUrl && (
+        {!error && pdfBlobUrl && (
           <div
             className="w-full h-full flex items-center justify-center transition-transform duration-200 relative"
             style={{
@@ -188,17 +194,14 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({
               {`@media print { body, html, #root { display: none !important; visibility: hidden !important; } }`}
             </style>
 
-            <object
-              data={`${pdfBlobUrl}#toolbar=0&navpanes=0&scrollbar=1`}
-              type="application/pdf"
-              className="w-full h-full rounded-lg bg-white shadow-card border border-border-default"
-            >
-              <iframe
-                src={`${pdfBlobUrl}#toolbar=0&navpanes=0&scrollbar=1`}
-                title={title}
-                className="w-full h-full rounded-lg bg-white shadow-card border border-border-default"
-              />
-            </object>
+            <iframe
+              src={`${pdfBlobUrl}#toolbar=0&navpanes=0&scrollbar=1`}
+              title={title}
+              onLoad={() => setIsDocumentLoaded(true)}
+              className={`w-full h-full rounded-lg bg-white shadow-card border border-border-default transition-opacity duration-300 ${
+                isDocumentLoaded ? 'opacity-100' : 'opacity-0'
+              }`}
+            />
 
             {/* Filigrane Dynamique Anti-Capture / Anti-Fuite */}
             <div

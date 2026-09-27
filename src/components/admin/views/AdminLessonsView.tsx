@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { BookOpen, UploadCloud, CheckCircle, Archive, Search, Loader2, RefreshCw, Edit3 } from 'lucide-react';
 import { apiClient } from '../../../api/client';
 import { useAdminAuth } from '../../../context/AdminAuthContext';
+import { useSocketEvent } from '../../../context/SocketContext';
 import { useToast } from '../../ui/Toast';
 import { EditLessonModal } from '../EditLessonModal';
 
@@ -50,6 +51,9 @@ export const AdminLessonsView: React.FC = () => {
   useEffect(() => {
     loadLessons();
   }, [loadLessons]);
+
+  useSocketEvent('LESSONS_CHANGED', () => loadLessons());
+  useSocketEvent('ADMIN_BATCH_UPDATED', () => loadLessons());
 
   const handlePublish = async (lesson: AdminLessonItem) => {
     const lessonId = lesson.id || lesson._id;

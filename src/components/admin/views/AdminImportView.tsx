@@ -3,6 +3,7 @@ import { UploadCloud, FileText, X, AlertCircle, Loader2, CheckCircle2, Layers, B
 import { AdminService, ImportBatchSummary } from '../../../services/admin.service';
 import { apiClient } from '../../../api/client';
 import { useToast } from '../../ui/Toast';
+import { useSocketEvent } from '../../../context/SocketContext';
 import { AdminBatchHistoryList } from './AdminBatchHistoryList';
 
 interface LevelOption {
@@ -75,6 +76,8 @@ export const AdminImportView: React.FC = () => {
       setBatches([]);
     }
   };
+
+  useSocketEvent('ADMIN_BATCH_UPDATED', () => loadBatches());
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {

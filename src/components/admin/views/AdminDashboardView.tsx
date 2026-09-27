@@ -1,14 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { adminAuthApi } from '../../../api/adminAuthApi';
+import { useSocketEvent, useSocket } from '../../../context/SocketContext';
 import {
   Users,
   BookOpen,
   CreditCard,
   DollarSign,
-  TrendingUp,
+  Activity,
   ShieldAlert,
   Loader2,
   RefreshCw,
+  Radio,
 } from 'lucide-react';
 
 interface KpiMetrics {
@@ -25,6 +27,7 @@ interface KpiMetrics {
 }
 
 export const AdminDashboardView: React.FC = () => {
+  const { isConnected } = useSocket();
   const [metrics, setMetrics] = useState<KpiMetrics>({
     totalUsers: 0,
     activeTeachers: 0,
@@ -38,10 +41,13 @@ export const AdminDashboardView: React.FC = () => {
     totalRevenueFcfa: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const loadKpis = async () => {
+  const loadKpis = useCallback(async (showLoader = false) => {
     try {
-      setIsLoading(true);
+      if (showLoader) setIsLoading(true);
+      else setIsRefreshing(true);
+
       const res = (await adminAuthApi.getDashboardKpis()) as {
         data?: {
           teachers?: { total?: number; newThisMonth?: number };
@@ -79,12 +85,21 @@ export const AdminDashboardView: React.FC = () => {
       // Mode silencieux
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    loadKpis();
-  }, []);
+    loadKpis(true);
+  }, [loadKpis]);
+
+  // Synchronisation dynamique temps réel
+  useSocketEvent('ADMIN_DASHBOARD_UPDATE', () => loadKpis(false));
+  useSocketEvent('PAYMENT_RECEIVED', () => loadKpis(false));
+  useSocketEvent('USER_REGISTERED', () => loadKpis(false));
+  useSocketEvent('LESSONS_CHANGED', () => loadKpis(false));
+  useSocketEvent('CATALOG_UPDATED', () => loadKpis(false));
+  useSocketEvent('ADMIN_BATCH_UPDATED', () => loadKpis(false));
 
   const getLessonSublabel = () => {
     if (metrics.totalLessons === 0) return 'Aucune fiche importée';
@@ -170,7 +185,7 @@ export const AdminDashboardView: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in text-left">
-      {/* En-tête de section avec contraste parfait */}
+      {/* En-tête de section avec indicateur en direct */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-800 pb-4">
         <div>
           <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
@@ -183,16 +198,26 @@ export const AdminDashboardView: React.FC = () => {
 
         <div className="flex items-center gap-2 self-start sm:self-auto">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
-            <TrendingUp className="w-3.5 h-3.5" />
-            <span>Système Opérationnel</span>
+            {isConnected ? (
+              <>
+                <Radio className="w-3.5 h-3.5 animate-pulse text-emerald-400" />
+                <span>En direct</span>
+              </>
+            ) : (
+              <>
+                <Activity className="w-3.5 h-3.5" />
+                <span>Système Connecté</span>
+              </>
+            )}
           </div>
           <button
             type="button"
-            onClick={loadKpis}
+            onClick={() => loadKpis(false)}
             aria-label="Actualiser"
             className="p-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
+            title="Actualiser les indicateurs"
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
           </button>
         </div>
       </div>
@@ -239,10 +264,10 @@ export const AdminDashboardView: React.FC = () => {
         </div>
         <div className="text-xs sm:text-sm space-y-1">
           <p className="font-bold text-white">
-            Architecture Stealth Active & Audits Cryptographiques
+            Architecture Stealth & Synchronisation Temps Réel Active
           </p>
           <p className="text-slate-400 leading-relaxed text-xs">
-            Toutes les sessions administratives, modifications de permissions et publications font l’objet d’un enregistrement immuable dans le journal d’audit. Les routes publiques d’administration demeurent sous le leurre 404 Honey-pot.
+            Les transactions GeniusPay, inscriptions, activations et publications s’actualisent instantanément sans rechargement de page. Les flux d’audit cryptographiques garantissent l’immuabilité de l’ensemble des opérations.
           </p>
         </div>
       </div>

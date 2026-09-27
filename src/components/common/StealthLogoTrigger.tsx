@@ -1,9 +1,9 @@
 import React, { useState, useRef, useCallback } from 'react';
 
-const REQUIRED_CLICKS = 3;
-const CLICK_TIMEOUT_MS = 1500; // Délai max pour effectuer les 3 clics
-const LONG_PRESS_MS = 10000; // 10 secondes d'appui continu
-const TICK_INTERVAL_MS = 50;
+const REQUIRED_TAPS = 5;
+const TAP_TIMEOUT_MS = 2000; // 2 secondes max entre les taps
+const LONG_PRESS_MS = 3000; // 3 secondes d'appui continu
+const TICK_INTERVAL_MS = 30;
 
 interface StealthLogoTriggerProps {
   className?: string;
@@ -17,8 +17,8 @@ export const StealthLogoTrigger: React.FC<StealthLogoTriggerProps> = ({
   alt = 'Logo RapidoFiche',
 }) => {
   const [progress, setProgress] = useState(0);
-  const clickCountRef = useRef(0);
-  const clickResetTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const tapCountRef = useRef(0);
+  const tapResetTimerRef = useRef<NodeJS.Timeout | null>(null);
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(0);
   const isPressingRef = useRef(false);
@@ -28,55 +28,65 @@ export const StealthLogoTrigger: React.FC<StealthLogoTriggerProps> = ({
       clearInterval(longPressTimerRef.current);
       longPressTimerRef.current = null;
     }
-    if (clickResetTimerRef.current) {
-      clearTimeout(clickResetTimerRef.current);
-      clickResetTimerRef.current = null;
+    if (tapResetTimerRef.current) {
+      clearTimeout(tapResetTimerRef.current);
+      tapResetTimerRef.current = null;
     }
     isPressingRef.current = false;
-    clickCountRef.current = 0;
+    tapCountRef.current = 0;
     setProgress(0);
   }, []);
 
   const triggerAdmin = useCallback(() => {
     resetAll();
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
-      navigator.vibrate([100, 50, 100]);
+      try {
+        navigator.vibrate([80, 40, 80]);
+      } catch {
+        // Ignorer si vibrations non supportées
+      }
     }
     window.dispatchEvent(new CustomEvent('open-stealth-admin'));
   }, [resetAll]);
 
-  const handlePointerDown = (e: React.PointerEvent) => {
-    if (e.button !== 0 && e.pointerType === 'mouse') return;
+  const handleStart = (e: React.PointerEvent | React.TouchEvent | React.MouseEvent) => {
+    // Bloquer le menu contextuel natif ou comportement par défaut de l'image
+    if ('button' in e && e.button !== 0 && (e as React.MouseEvent).button !== 0) return;
 
-    // Incrémentation du compteur de clics
-    clickCountRef.current += 1;
-
-    // Réinitialisation du délai d'expiration des clics
-    if (clickResetTimerRef.current) {
-      clearTimeout(clickResetTimerRef.current);
+    // 1. Détection des multi-taps rapides (5 taps consécutifs)
+    tapCountRef.current += 1;
+    if (tapResetTimerRef.current) {
+      clearTimeout(tapResetTimerRef.current);
     }
-    clickResetTimerRef.current = setTimeout(() => {
-      clickCountRef.current = 0;
-    }, CLICK_TIMEOUT_MS);
+    tapResetTimerRef.current = setTimeout(() => {
+      tapCountRef.current = 0;
+    }, TAP_TIMEOUT_MS);
 
-    // Si on a atteint la combinaison (au moins 3 clics préalables) et qu'on maintient appuyé
-    if (clickCountRef.current >= REQUIRED_CLICKS) {
-      isPressingRef.current = true;
-      startTimeRef.current = Date.now();
-
-      longPressTimerRef.current = setInterval(() => {
-        const elapsed = Date.now() - startTimeRef.current;
-        const currentProgress = Math.min((elapsed / LONG_PRESS_MS) * 100, 100);
-        setProgress(currentProgress);
-
-        if (elapsed >= LONG_PRESS_MS) {
-          triggerAdmin();
-        }
-      }, TICK_INTERVAL_MS);
+    if (tapCountRef.current >= REQUIRED_TAPS) {
+      triggerAdmin();
+      return;
     }
+
+    // 2. Détection de l'appui long furtif (3 secondes)
+    isPressingRef.current = true;
+    startTimeRef.current = Date.now();
+
+    if (longPressTimerRef.current) {
+      clearInterval(longPressTimerRef.current);
+    }
+
+    longPressTimerRef.current = setInterval(() => {
+      const elapsed = Date.now() - startTimeRef.current;
+      const currentProgress = Math.min((elapsed / LONG_PRESS_MS) * 100, 100);
+      setProgress(currentProgress);
+
+      if (elapsed >= LONG_PRESS_MS) {
+        triggerAdmin();
+      }
+    }, TICK_INTERVAL_MS);
   };
 
-  const handlePointerUpOrCancel = () => {
+  const handleEndOrCancel = () => {
     if (isPressingRef.current) {
       if (longPressTimerRef.current) {
         clearInterval(longPressTimerRef.current);
@@ -84,8 +94,13 @@ export const StealthLogoTrigger: React.FC<StealthLogoTriggerProps> = ({
       }
       isPressingRef.current = false;
       setProgress(0);
-      clickCountRef.current = 0;
     }
+  };
+
+  const preventContextMenu = (e: React.SyntheticEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
   };
 
   const radius = 26;
@@ -94,13 +109,25 @@ export const StealthLogoTrigger: React.FC<StealthLogoTriggerProps> = ({
 
   return (
     <div
-      onPointerDown={handlePointerDown}
-      onPointerUp={handlePointerUpOrCancel}
-      onPointerLeave={handlePointerUpOrCancel}
-      onPointerCancel={handlePointerUpOrCancel}
-      className={`relative inline-block select-none cursor-pointer ${className}`}
-      title=""
-      style={{ WebkitTouchCallout: 'none', userSelect: 'none' }}
+      role="button"
+      tabIndex={0}
+      aria-label="RapidoFiche"
+      onPointerDown={handleStart}
+      onPointerUp={handleEndOrCancel}
+      onPointerLeave={handleEndOrCancel}
+      onPointerCancel={handleEndOrCancel}
+      onTouchStart={handleStart}
+      onTouchEnd={handleEndOrCancel}
+      onTouchCancel={handleEndOrCancel}
+      onContextMenu={preventContextMenu}
+      onDragStart={preventContextMenu}
+      className={`relative inline-block select-none cursor-pointer touch-manipulation no-touch-callout focus:outline-none ${className}`}
+      style={{
+        WebkitTouchCallout: 'none',
+        WebkitUserSelect: 'none',
+        userSelect: 'none',
+        touchAction: 'manipulation',
+      }}
     >
       {/* Anneau Circulaire de Progression Furtive */}
       {progress > 0 && (
@@ -122,12 +149,22 @@ export const StealthLogoTrigger: React.FC<StealthLogoTriggerProps> = ({
         </svg>
       )}
 
-      {/* Image du Logo */}
+      {/* Image du Logo avec neutralisation complète du téléchargement */}
       <img
         src="/logo.png"
         alt={alt}
         draggable={false}
-        className={`${imageClassName} ${progress > 0 ? 'scale-95 transition-transform' : ''}`}
+        onContextMenu={preventContextMenu}
+        onDragStart={preventContextMenu}
+        className={`${imageClassName} pointer-events-none select-none ${
+          progress > 0 ? 'scale-95 transition-transform' : ''
+        }`}
+        style={{
+          WebkitTouchCallout: 'none',
+          WebkitUserSelect: 'none',
+          userSelect: 'none',
+          pointerEvents: 'none',
+        }}
       />
     </div>
   );

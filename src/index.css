@@ -51,3 +51,12 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #94A3B8;
 }
+
+/* Neutralisation du menu contextuel natif de téléchargement d'image sur mobile */
+.no-touch-callout {
+  -webkit-touch-callout: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  touch-action: manipulation;
+}
+
