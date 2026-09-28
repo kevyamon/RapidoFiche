@@ -131,9 +131,12 @@ export const LessonDetailPage: React.FC = () => {
         throw new Error(jsonErr?.error?.message || 'Erreur lors du chargement de la fiche');
       }
 
-      if (activeBlobUrlRef.current) URL.revokeObjectURL(activeBlobUrlRef.current);
       const pdfBlob = new Blob([pdfRes.data], { type: 'application/pdf' });
       const url = URL.createObjectURL(pdfBlob);
+
+      if (activeBlobUrlRef.current && activeBlobUrlRef.current !== url) {
+        URL.revokeObjectURL(activeBlobUrlRef.current);
+      }
       activeBlobUrlRef.current = url;
       setPdfBlobUrl(url);
     } catch (err: any) {
@@ -178,8 +181,12 @@ export const LessonDetailPage: React.FC = () => {
   useEffect(() => {
     loadLessonPdf();
     return () => {
+      // Nettoyage au démontage final de la page
       if (activeBlobUrlRef.current) {
-        URL.revokeObjectURL(activeBlobUrlRef.current);
+        const urlToRevoke = activeBlobUrlRef.current;
+        setTimeout(() => {
+          URL.revokeObjectURL(urlToRevoke);
+        }, 1000);
       }
     };
   }, [loadLessonPdf]);

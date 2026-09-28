@@ -90,7 +90,14 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({
   const [isDocumentLoaded, setIsDocumentLoaded] = useState<boolean>(false);
 
   useEffect(() => {
-    setIsDocumentLoaded(false);
+    if (!pdfBlobUrl) {
+      setIsDocumentLoaded(false);
+      return;
+    }
+    const timer = setTimeout(() => {
+      setIsDocumentLoaded(true);
+    }, 800);
+    return () => clearTimeout(timer);
   }, [pdfBlobUrl]);
 
   return (
