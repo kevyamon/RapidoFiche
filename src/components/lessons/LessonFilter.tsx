@@ -1,5 +1,7 @@
-import React from 'react';
-import { Search, RotateCcw } from 'lucide-react';
+import React, { useState } from 'react';
+import { Search, RotateCcw, Calendar, CalendarDays, ChevronDown } from 'lucide-react';
+import { TermSelectorModal } from './TermSelectorModal';
+import { WeekSelectorModal } from './WeekSelectorModal';
 
 export interface SubjectItem {
   id: string;
@@ -28,8 +30,11 @@ export const LessonFilter: React.FC<LessonFilterProps> = ({
   onChange,
   onReset,
 }) => {
+  const [isTermModalOpen, setIsTermModalOpen] = useState(false);
+  const [isWeekModalOpen, setIsWeekModalOpen] = useState(false);
+
   const hasActiveFilters =
-    values.search || values.subjectId || values.week || values.term;
+    Boolean(values.search || values.subjectId || values.week || values.term);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange({ ...values, search: e.target.value });
@@ -39,13 +44,8 @@ export const LessonFilter: React.FC<LessonFilterProps> = ({
     onChange({ ...values, subjectId: values.subjectId === subId ? '' : subId });
   };
 
-  const handleWeekChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    onChange({ ...values, week: e.target.value });
-  };
-
-  const handleTermChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    onChange({ ...values, term: e.target.value });
-  };
+  const termLabel = values.term ? `Trimestre ${values.term}` : 'Tous trimestres';
+  const weekLabel = values.week ? `Semaine ${values.week}` : 'Toutes semaines';
 
   return (
     <div className="space-y-3 mb-6 w-full max-w-full overflow-hidden">
@@ -63,33 +63,41 @@ export const LessonFilter: React.FC<LessonFilterProps> = ({
           />
         </div>
 
-        {/* Ligne des Sélecteurs */}
+        {/* Ligne des Sélecteurs Personnalisés */}
         <div className="flex items-center gap-2 shrink-0">
-          {/* Sélecteur Trimestre */}
-          <select
-            value={values.term}
-            onChange={handleTermChange}
-            className="flex-1 sm:flex-initial sm:w-36 px-3 py-2.5 rounded-xl border border-border-default bg-background-card text-xs sm:text-sm text-text-secondary focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-subtle cursor-pointer"
+          {/* Bouton Déclencheur Trimestre */}
+          <button
+            type="button"
+            onClick={() => setIsTermModalOpen(true)}
+            className={`flex-1 sm:flex-initial sm:w-40 px-3 py-2.5 rounded-xl border transition-all flex items-center justify-between gap-1.5 text-xs sm:text-sm shadow-subtle ${
+              values.term
+                ? 'bg-primary-50 text-primary-800 border-primary-300 font-semibold'
+                : 'bg-background-card text-text-secondary border-border-default hover:border-primary-300'
+            }`}
           >
-            <option value="">Tous trimestres</option>
-            <option value="1">Trimestre 1</option>
-            <option value="2">Trimestre 2</option>
-            <option value="3">Trimestre 3</option>
-          </select>
+            <div className="flex items-center gap-1.5 truncate">
+              <Calendar className="w-3.5 h-3.5 text-primary-600 shrink-0" />
+              <span className="truncate">{termLabel}</span>
+            </div>
+            <ChevronDown className="w-3.5 h-3.5 text-text-muted shrink-0" />
+          </button>
 
-          {/* Sélecteur Semaine */}
-          <select
-            value={values.week}
-            onChange={handleWeekChange}
-            className="flex-1 sm:flex-initial sm:w-36 px-3 py-2.5 rounded-xl border border-border-default bg-background-card text-xs sm:text-sm text-text-secondary focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-subtle cursor-pointer"
+          {/* Bouton Déclencheur Semaine */}
+          <button
+            type="button"
+            onClick={() => setIsWeekModalOpen(true)}
+            className={`flex-1 sm:flex-initial sm:w-40 px-3 py-2.5 rounded-xl border transition-all flex items-center justify-between gap-1.5 text-xs sm:text-sm shadow-subtle ${
+              values.week
+                ? 'bg-primary-50 text-primary-800 border-primary-300 font-semibold'
+                : 'bg-background-card text-text-secondary border-border-default hover:border-primary-300'
+            }`}
           >
-            <option value="">Toutes semaines</option>
-            {Array.from({ length: 36 }, (_, i) => i + 1).map((w) => (
-              <option key={w} value={w.toString()}>
-                Semaine {w}
-              </option>
-            ))}
-          </select>
+            <div className="flex items-center gap-1.5 truncate">
+              <CalendarDays className="w-3.5 h-3.5 text-primary-600 shrink-0" />
+              <span className="truncate">{weekLabel}</span>
+            </div>
+            <ChevronDown className="w-3.5 h-3.5 text-text-muted shrink-0" />
+          </button>
 
           {/* Bouton de Réinitialisation */}
           {hasActiveFilters && (
@@ -105,7 +113,7 @@ export const LessonFilter: React.FC<LessonFilterProps> = ({
         </div>
       </div>
 
-      {/* 2. Pilules de Sélection des Matières (Défilement Horizontal Propre et Isolé) */}
+      {/* 2. Pilules de Sélection des Matières */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-full scrollbar-none touch-pan-x">
         <button
           onClick={() => handleSubjectSelect('')}
@@ -136,6 +144,21 @@ export const LessonFilter: React.FC<LessonFilterProps> = ({
           );
         })}
       </div>
+
+      {/* Modales Personnalisées avec Gestion du Bouton Retour Mobile */}
+      <TermSelectorModal
+        isOpen={isTermModalOpen}
+        onClose={() => setIsTermModalOpen(false)}
+        selectedTerm={values.term}
+        onSelectTerm={(newTerm) => onChange({ ...values, term: newTerm })}
+      />
+
+      <WeekSelectorModal
+        isOpen={isWeekModalOpen}
+        onClose={() => setIsWeekModalOpen(false)}
+        selectedWeek={values.week}
+        onSelectWeek={(newWeek) => onChange({ ...values, week: newWeek })}
+      />
     </div>
   );
 };

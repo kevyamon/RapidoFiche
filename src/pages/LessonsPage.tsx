@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { BookOpen, ShieldAlert, CreditCard } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useSubscription } from '../context/SubscriptionContext';
-import { Button } from '../components/ui/Button';
 import { LessonFilter, LessonFilterValues, SubjectItem } from '../components/lessons/LessonFilter';
 import { LessonGrid, PaginationInfo } from '../components/lessons/LessonGrid';
 import { LessonSummary } from '../components/lessons/LessonCard';
@@ -15,7 +14,7 @@ import { useSeo } from '../hooks/useSeo';
 export const LessonsPage: React.FC = () => {
   useSeo({
     title: 'Catalogue des Fiches Pédagogiques',
-    description: 'Explorez la bibliothèque complète des fiches pédagogiques préscolaire et primaire : mathématiques, français, sciences, histoire-géo, conformes au programme MENA.',
+    description: 'Explorez la bibliothèque complète des fiches pédagogiques du primaire (CP1 au CM2) : mathématiques, français, sciences, histoire-géo, EDHC, conformes au programme officiel MENA.',
     canonicalPath: '/fiches',
   });
 
@@ -41,7 +40,6 @@ export const LessonsPage: React.FC = () => {
     term: searchParams.get('term') || '',
   });
 
-  // Charger les matières de l'enseignant
   useEffect(() => {
     const fetchSubjects = async () => {
       if (!user) return;
@@ -51,16 +49,15 @@ export const LessonsPage: React.FC = () => {
           setSubjects(res.data.data);
         }
       } catch {
-        // Ignorer
+        // Mode silencieux
       }
     };
     fetchSubjects();
   }, [user]);
 
-  const errorRef = React.useRef(error);
+  const errorRef = useRef(error);
   errorRef.current = error;
 
-  // Charger les fiches avec filtres et pagination
   const fetchLessons = useCallback(
     async (pageNumber = 1) => {
       try {
@@ -108,8 +105,7 @@ export const LessonsPage: React.FC = () => {
   };
 
   const handleResetFilters = () => {
-    const emptyFilters = { search: '', subjectId: '', week: '', term: '' };
-    setFilters(emptyFilters);
+    setFilters({ search: '', subjectId: '', week: '', term: '' });
     setSearchParams({});
   };
 
@@ -157,31 +153,30 @@ export const LessonsPage: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in w-full max-w-full overflow-hidden">
-      {/* Bannière de Verrouillage si Abonnement Inactif/Expiré */}
+      {/* Bannière Rouge Bien Visible si Abonnement Inactif ou Expiré */}
       {!isSubActive && (
-        <div className="p-4 sm:p-5 rounded-2xl bg-primary-50 border border-primary-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-subtle">
+        <div className="p-4 sm:p-5 rounded-2xl bg-status-danger-bg border-2 border-status-danger-border flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-subtle animate-fade-in">
           <div className="flex items-start sm:items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-primary-100 text-primary-800 shrink-0 mt-0.5 sm:mt-0">
-              <ShieldAlert className="w-5 h-5" />
+            <div className="p-2.5 rounded-xl bg-status-danger-badge text-white shrink-0 mt-0.5 sm:mt-0">
+              <ShieldAlert className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-primary-900">
-                Abonnement requis pour accéder aux fiches complètes
+              <h2 className="text-sm sm:text-base font-bold text-status-danger-text">
+                Abonnement requis ou expiré
               </h2>
-              <p className="text-xs text-primary-700 mt-0.5">
-                Valable 30 jours pour l’ensemble des matières et semaines de votre classe.
+              <p className="text-xs text-status-danger-text/90 mt-0.5">
+                Activez votre forfait (200 FCFA) pour débloquer l’ensemble des fiches de votre classe.
               </p>
             </div>
           </div>
-          <Button
-            variant="secondary"
-            size="sm"
+          <button
+            type="button"
             onClick={openPayModal}
-            leftIcon={<CreditCard className="w-4 h-4" />}
-            className="shrink-0 self-start sm:self-auto"
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-status-danger-badge hover:bg-red-600 text-white font-bold text-xs sm:text-sm shadow-subtle shrink-0 transition-all active:scale-95 animate-pulse"
           >
-            S’abonner (200 FCFA)
-          </Button>
+            <CreditCard className="w-4 h-4" />
+            <span>S’abonner (200 FCFA)</span>
+          </button>
         </div>
       )}
 
@@ -193,7 +188,7 @@ export const LessonsPage: React.FC = () => {
             <span>Bibliothèque de Fiches</span>
           </h1>
           <p className="text-xs sm:text-sm text-text-muted mt-1">
-            Fiches pédagogiques conformes aux programmes officiels de votre classe.
+            Fiches pédagogiques conformes aux programmes officiels du primaire.
           </p>
         </div>
       </div>
@@ -206,14 +201,17 @@ export const LessonsPage: React.FC = () => {
         onReset={handleResetFilters}
       />
 
-      {/* Grille de Fiches */}
+      {/* Grille de Fiches Intelligente */}
       <LessonGrid
         lessons={lessons}
         isLoading={isLoading}
+        isSubActive={isSubActive}
+        onOpenPayModal={openPayModal}
         pagination={pagination}
         onPageChange={(page) => fetchLessons(page)}
         onToggleFavorite={handleToggleFavorite}
         onSaveOffline={handleSaveOffline}
+        emptyMessage="Aucune fiche pédagogique n’a encore été publiée pour cette matière ou semaine."
       />
     </div>
   );

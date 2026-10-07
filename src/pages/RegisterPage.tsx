@@ -11,8 +11,8 @@ import { useSeo } from '../hooks/useSeo';
 export const RegisterPage: React.FC = () => {
   useSeo({
     title: 'Inscription Enseignant — Créez votre compte',
-    description: 'Rejoignez RapidoFiche et accédez immédiatement aux fiches pédagogiques de votre niveau de classe (Préscolaire et Primaire).',
-    canonicalPath: '/register',
+    description: 'Rejoignez RapidoFiche et accédez immédiatement aux fiches pédagogiques officielles de votre niveau de classe primaire (CP1 au CM2).',
+    canonicalPath: '/inscription',
   });
 
   const { register } = useAuth();

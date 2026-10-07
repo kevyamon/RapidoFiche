@@ -10,7 +10,11 @@ import { Button } from '../ui/Button';
 import { ScrollToTopButton } from '../common/ScrollToTopButton';
 import { useToast } from '../ui/Toast';
 
-export const AppLayout: React.FC = () => {
+export interface AppLayoutProps {
+  children?: React.ReactNode;
+}
+
+export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const { user } = useAuth();
   const {
     isPayModalOpen,
@@ -94,7 +98,7 @@ export const AppLayout: React.FC = () => {
 
       {/* Contenu Principal avec marge basse pour la Bottom Bar Mobile */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24 md:pb-8 overflow-x-hidden">
-        <Outlet />
+        {children || <Outlet />}
       </main>
 
       {/* Barre de Navigation Basse (Smartphone) */}

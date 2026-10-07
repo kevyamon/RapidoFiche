@@ -25,10 +25,11 @@ interface SubjectOption {
 }
 
 const DEFAULT_LEVELS: LevelOption[] = [
-  { id: 'PS', code: 'PS', label: 'Petite Section' }, { id: 'MS', code: 'MS', label: 'Moyenne Section' },
-  { id: 'GS', code: 'GS', label: 'Grande Section' }, { id: 'CP1', code: 'CP1', label: 'CP 1ère année' },
-  { id: 'CP2', code: 'CP2', label: 'CP 2ème année' }, { id: 'CE1', code: 'CE1', label: 'CE 1ère année' },
-  { id: 'CE2', code: 'CE2', label: 'CE 2ème année' }, { id: 'CM1', code: 'CM1', label: 'CM 1ère année' },
+  { id: 'CP1', code: 'CP1', label: 'CP 1ère année' },
+  { id: 'CP2', code: 'CP2', label: 'CP 2ème année' },
+  { id: 'CE1', code: 'CE1', label: 'CE 1ère année' },
+  { id: 'CE2', code: 'CE2', label: 'CE 2ème année' },
+  { id: 'CM1', code: 'CM1', label: 'CM 1ère année' },
   { id: 'CM2', code: 'CM2', label: 'CM 2ème année' },
 ];
 
@@ -156,7 +157,6 @@ export const EditLessonModal: React.FC<EditLessonModalProps> = ({
       maxWidth="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-4 pt-2 text-left">
-        {/* Titre */}
         <div>
           <label className="block text-xs font-semibold text-text-secondary mb-1">
             Titre de la fiche pédagogique *
@@ -168,18 +168,16 @@ export const EditLessonModal: React.FC<EditLessonModalProps> = ({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
-              placeholder="Ex: Mathématiques - PS - Semaine 1 : Les Formes"
+              placeholder="Ex: Mathématiques - CP1 - Semaine 1 : Nombres et Opérations"
               className="w-full pl-9 pr-3 py-2 rounded-xl border border-border-default bg-background-input text-xs text-text-primary focus:ring-2 focus:ring-primary-500 outline-none"
             />
           </div>
         </div>
 
-        {/* Classe & Matière */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {/* Classe */}
           <div>
             <label className="block text-xs font-semibold text-text-secondary mb-1">
-              Classe / Niveau *
+              Classe / Niveau Primaire *
             </label>
             <div className="relative">
               <GraduationCap className="w-4 h-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" />
@@ -199,7 +197,6 @@ export const EditLessonModal: React.FC<EditLessonModalProps> = ({
             </div>
           </div>
 
-          {/* Matière */}
           <div>
             <label className="block text-xs font-semibold text-text-secondary mb-1">
               Matière Pédagogique *
@@ -223,12 +220,10 @@ export const EditLessonModal: React.FC<EditLessonModalProps> = ({
           </div>
         </div>
 
-        {/* Semaine & Statut */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {/* Semaine */}
           <div>
             <label className="block text-xs font-semibold text-text-secondary mb-1">
-              Semaine du programme
+              Semaine du programme (1-52)
             </label>
             <div className="relative">
               <Calendar className="w-4 h-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" />
@@ -243,7 +238,6 @@ export const EditLessonModal: React.FC<EditLessonModalProps> = ({
             </div>
           </div>
 
-          {/* Statut */}
           <div>
             <label className="block text-xs font-semibold text-text-secondary mb-1">
               Statut de la fiche
@@ -263,7 +257,6 @@ export const EditLessonModal: React.FC<EditLessonModalProps> = ({
           </div>
         </div>
 
-        {/* Actions */}
         <div className="flex justify-end gap-2 pt-3 border-t border-border-subtle">
           <Button variant="ghost" size="sm" type="button" onClick={onClose}>
             Annuler

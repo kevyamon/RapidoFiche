@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, Clock, ArrowRight, Layers, CreditCard } from 'lucide-react';
+import { BookOpen, Clock, ArrowRight, Layers, CreditCard, ShieldAlert } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSubscription } from '../context/SubscriptionContext';
 import { apiClient } from '../api/client';
@@ -18,7 +18,7 @@ interface SubjectItem {
 export const HomePage: React.FC = () => {
   useSeo({
     title: 'Tableau de Bord Enseignant',
-    description: 'Accédez aux fiches pédagogiques officielles du préscolaire et du primaire en Côte d’Ivoire. Préparation de cours rapide et consultation hors-ligne.',
+    description: 'Accédez aux fiches pédagogiques officielles du primaire en Côte d’Ivoire (CP1 au CM2). Préparation de cours rapide et consultation hors-ligne.',
     canonicalPath: '/',
   });
 
@@ -59,7 +59,7 @@ export const HomePage: React.FC = () => {
           setRecentLessons(lessons.filter(Boolean));
         }
       } catch {
-        // Mode silencieux pour le chargement partiel
+        // Mode silencieux
       } finally {
         setIsLoading(false);
       }
@@ -71,12 +71,39 @@ export const HomePage: React.FC = () => {
   const isSubActive = subscription?.status === 'ACTIVE';
 
   return (
-    <div className="space-y-6 sm:space-y-8 animate-fade-in">
-      {/* 1. Bannière d'Accueil Enseignant Épurée et Professionnelle */}
+    <div className="space-y-6 sm:space-y-8 animate-fade-in w-full max-w-full overflow-hidden">
+      {/* Bannière d'Avertissement Grand Format si Abonnement Inactif ou Expiré */}
+      {!isSubActive && (
+        <div className="p-4 sm:p-5 rounded-2xl bg-status-danger-bg border-2 border-status-danger-border flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-subtle">
+          <div className="flex items-start sm:items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-status-danger-badge text-white shrink-0 mt-0.5 sm:mt-0">
+              <ShieldAlert className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-sm sm:text-base font-bold text-status-danger-text">
+                Abonnement requis pour consulter toutes les fiches
+              </h2>
+              <p className="text-xs text-status-danger-text/90 mt-0.5">
+                Activez votre forfait mensuel (200 FCFA) pour débloquer l’ensemble des matières et semaines de votre classe ({levelCode}).
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={openPayModal}
+            className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-status-danger-badge hover:bg-red-600 text-white text-xs sm:text-sm font-bold shadow-elevated shrink-0 transition-all active:scale-95 animate-pulse"
+          >
+            <CreditCard className="w-4 h-4" />
+            <span>Activer l'accès illimité (200 FCFA)</span>
+          </button>
+        </div>
+      )}
+
+      {/* 1. Bannière d'Accueil Enseignant */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary-900 via-primary-800 to-primary-700 text-text-inverse p-6 sm:p-8 shadow-elevated">
         <div className="relative z-10 max-w-2xl">
           <p className="text-xs font-semibold text-primary-200 tracking-wider uppercase mb-2">
-            Programme Officiel National • {levelCode}
+            Programme National Primaire • {levelCode}
           </p>
 
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight">
@@ -98,10 +125,11 @@ export const HomePage: React.FC = () => {
 
             {!isSubActive && (
               <button
+                type="button"
                 onClick={openPayModal}
-                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-white/10 hover:bg-white/20 text-white transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-status-danger-badge hover:bg-red-600 text-white transition-all shadow-subtle active:scale-95"
               >
-                <CreditCard className="w-4 h-4 text-secondary-300" />
+                <CreditCard className="w-4 h-4" />
                 <span>Activer l'accès illimité (200 FCFA)</span>
               </button>
             )}
@@ -114,13 +142,13 @@ export const HomePage: React.FC = () => {
         <div className="flex items-center justify-between mb-3.5">
           <h2 className="text-base sm:text-lg font-bold text-text-primary flex items-center gap-2">
             <Layers className="w-5 h-5 text-primary-600" />
-            <span>Matières de votre niveau</span>
+            <span>Matières de votre niveau ({levelCode})</span>
           </h2>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {isLoading
-            ? Array.from({ length: 5 }).map((_, i) => (
+            ? Array.from({ length: 4 }).map((_, i) => (
                 <div
                   key={i}
                   className="p-4 rounded-xl bg-background-card border border-border-default shadow-card animate-pulse h-24"

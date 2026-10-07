@@ -107,8 +107,9 @@ export const Navbar: React.FC = () => {
               </span>
             ) : (
               <button
+                type="button"
                 onClick={openPayModal}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-secondary-600 hover:bg-secondary-700 text-text-inverse shadow-subtle transition-all active:scale-95"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-status-danger-badge hover:bg-red-600 text-text-inverse shadow-subtle transition-all active:scale-95 animate-pulse"
               >
                 <CreditCard className="w-3.5 h-3.5" />
                 <span>Activer (200 F)</span>

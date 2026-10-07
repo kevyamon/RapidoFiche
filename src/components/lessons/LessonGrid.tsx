@@ -1,5 +1,5 @@
 import React from 'react';
-import { SearchX, ChevronLeft, ChevronRight } from 'lucide-react';
+import { SearchX, ChevronLeft, ChevronRight, ShieldAlert, CreditCard } from 'lucide-react';
 import { LessonCard, LessonSummary } from './LessonCard';
 import { Button } from '../ui/Button';
 
@@ -13,6 +13,8 @@ export interface PaginationInfo {
 export interface LessonGridProps {
   lessons: LessonSummary[];
   isLoading: boolean;
+  isSubActive?: boolean;
+  onOpenPayModal?: () => void;
   pagination?: PaginationInfo;
   onPageChange?: (newPage: number) => void;
   onToggleFavorite?: (lessonId: string) => Promise<void>;
@@ -23,6 +25,8 @@ export interface LessonGridProps {
 export const LessonGrid: React.FC<LessonGridProps> = ({
   lessons,
   isLoading,
+  isSubActive = true,
+  onOpenPayModal,
   pagination,
   onPageChange,
   onToggleFavorite,
@@ -56,12 +60,38 @@ export const LessonGrid: React.FC<LessonGridProps> = ({
   }
 
   if (lessons.length === 0) {
+    if (!isSubActive) {
+      return (
+        <div className="flex flex-col items-center justify-center p-8 sm:p-12 bg-background-card rounded-2xl border-2 border-status-danger-border text-center shadow-subtle animate-fade-in">
+          <div className="w-14 h-14 rounded-2xl bg-status-danger-bg text-status-danger-badge flex items-center justify-center mb-3.5 border border-status-danger-border">
+            <ShieldAlert className="w-7 h-7" />
+          </div>
+          <h3 className="text-base sm:text-lg font-bold text-text-primary">
+            Abonnement requis ou expiré
+          </h3>
+          <p className="text-xs sm:text-sm text-text-muted mt-1.5 max-w-md leading-relaxed">
+            Activez votre forfait mensuel (200 FCFA) pour débloquer l'accès à toutes les fiches pédagogiques officielles de votre niveau de classe.
+          </p>
+          {onOpenPayModal && (
+            <button
+              type="button"
+              onClick={onOpenPayModal}
+              className="mt-5 inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-status-danger-badge hover:bg-red-600 text-white font-bold text-xs sm:text-sm shadow-elevated transition-all active:scale-95 animate-pulse"
+            >
+              <CreditCard className="w-4 h-4" />
+              <span>Activer l'accès illimité (200 FCFA)</span>
+            </button>
+          )}
+        </div>
+      );
+    }
+
     return (
       <div className="flex flex-col items-center justify-center p-12 bg-background-card rounded-2xl border border-border-default text-center">
         <div className="w-12 h-12 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center mb-3">
           <SearchX className="w-6 h-6" />
         </div>
-        <h3 className="text-base font-semibold text-text-primary">Aucune fiche trouvée</h3>
+        <h3 className="text-base font-semibold text-text-primary">Aucune fiche disponible</h3>
         <p className="text-xs sm:text-sm text-text-muted mt-1 max-w-sm">{emptyMessage}</p>
       </div>
     );

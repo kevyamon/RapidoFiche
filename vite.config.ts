@@ -35,7 +35,7 @@ export default defineConfig({
         name: 'RapidoFiche — Bibliothèque Pédagogique',
         short_name: 'RapidoFiche',
         description:
-          'Plateforme EdTech de consultation de fiches pédagogiques pour les enseignants du préscolaire et du primaire en Côte d’Ivoire',
+          'Plateforme EdTech de consultation de fiches pédagogiques pour les enseignants du primaire (CP1 au CM2) en Côte d’Ivoire',
         theme_color: '#1E3A8A',
         background_color: '#F8FAFC',
         display: 'standalone',
