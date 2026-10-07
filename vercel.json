@@ -1,5 +1,10 @@
 {
-  "version": 2,
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "cleanUrls": true,
+  "trailingSlash": false,
   "rewrites": [
     {
       "source": "/(.*)",
@@ -42,11 +47,11 @@
       ]
     },
     {
-      "source": "/(robots.txt|sitemap.xml|manifest.webmanifest)",
+      "source": "/(robots.txt|sitemap.xml|manifest.webmanifest|registerSW.js|sw.js)",
       "headers": [
         {
           "key": "Cache-Control",
-          "value": "public, max-age=86400, stale-while-revalidate=43200"
+          "value": "public, max-age=0, must-revalidate"
         }
       ]
     }
