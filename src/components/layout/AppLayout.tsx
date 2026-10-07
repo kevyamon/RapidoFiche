@@ -52,27 +52,21 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       setIsSubmitting(true);
       toastInfo('Connexion à la passerelle GeniusPay...');
       const res = await initiateSubscriptionPayment(phoneNumber || undefined);
-      if (res.checkoutUrl) {
-        closePayModal();
-        setIsSubmitting(false);
-
-        const isExternal =
-          res.checkoutUrl.startsWith('https://pay.genius.ci') ||
-          res.checkoutUrl.startsWith('http://pay.genius.ci') ||
-          (!res.checkoutUrl.includes(window.location.host) &&
-            (res.checkoutUrl.startsWith('http://') || res.checkoutUrl.startsWith('https://')));
-
-        if (isExternal) {
-          window.location.href = res.checkoutUrl;
-          return;
-        }
-
-        // Mode Mock local : rechargement propre avec abonnement activé
-        await checkSubscription();
-        window.location.reload();
-      } else {
+      
+      if (!res.checkoutUrl) {
         throw new Error('L’URL de paiement GeniusPay est introuvable.');
       }
+
+      if (res.isMock) {
+        closePayModal();
+        setIsSubmitting(false);
+        await checkSubscription();
+        return;
+      }
+
+      // Mode Réel GeniusPay : Redirection immédiate vers la page de paiement sécurisée
+      toastInfo('Redirection vers la passerelle GeniusPay...');
+      window.location.assign(res.checkoutUrl);
     } catch (err: any) {
       setIsSubmitting(false);
       const message =

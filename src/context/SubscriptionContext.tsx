@@ -27,7 +27,7 @@ interface SubscriptionContextValue {
   closePayModal: () => void;
   checkSubscription: (isSilent?: boolean) => Promise<void>;
   verifyPayment: (reference?: string) => Promise<VerifyPaymentResult>;
-  initiateSubscriptionPayment: (phoneNumber?: string) => Promise<{ checkoutUrl: string; reference: string }>;
+  initiateSubscriptionPayment: (phoneNumber?: string) => Promise<{ checkoutUrl: string; reference: string; isMock?: boolean }>;
 }
 
 const SUBSCRIPTION_CACHE_KEY = 'rapidofiche_subscription_cache';
@@ -208,6 +208,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     const response = await apiClient.post('/payments/initiate', payload);
     const checkoutUrl = response.data?.data?.checkoutUrl;
     const reference = response.data?.data?.reference;
+    const isMock = Boolean(response.data?.data?.isMock);
 
     if (!checkoutUrl) {
       throw new Error(
@@ -219,6 +220,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     return {
       checkoutUrl,
       reference,
+      isMock,
     };
   };
 
