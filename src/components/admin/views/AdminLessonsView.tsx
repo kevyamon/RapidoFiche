@@ -25,77 +25,66 @@ export const AdminLessonsView: React.FC = () => {
   const [selectedLessonForEdit, setSelectedLessonForEdit] = useState<AdminLessonItem | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState<{ id: string; type: 'publish' | 'archive' } | null>(null);
   const { success, error } = useToast();
 
-  const loadLessons = useCallback(async () => {
+  const loadLessons = useCallback(async (silent = false) => {
     try {
-      setIsLoading(true);
-      const res = await apiClient.get('/lessons', {
-        params: { search, limit: 100 },
-      });
+      if (!silent) setIsLoading(true);
+      const res = await apiClient.get('/lessons', { params: { search, limit: 100 } });
       if (res.data?.success) {
         const rawList = Array.isArray(res.data.data) ? res.data.data : [];
-        const normalized = rawList.map((l: any) => ({
-          ...l,
-          id: l.id || l._id,
-        }));
-        setLessons(normalized);
+        setLessons(rawList.map((l: any) => ({ ...l, id: l.id || l._id })));
       }
     } catch {
       error('Impossible de charger les fiches pédagogiques');
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   }, [search, error]);
 
-  useEffect(() => {
-    loadLessons();
-  }, [loadLessons]);
-
-  useSocketEvent('LESSONS_CHANGED', () => loadLessons());
-  useSocketEvent('ADMIN_BATCH_UPDATED', () => loadLessons());
+  useEffect(() => { loadLessons(); }, [loadLessons]);
+  useSocketEvent('LESSONS_CHANGED', () => loadLessons(true));
+  useSocketEvent('ADMIN_BATCH_UPDATED', () => loadLessons(true));
 
   const handlePublish = async (lesson: AdminLessonItem) => {
     const lessonId = lesson.id || lesson._id;
-    if (!lessonId) {
-      error('Identifiant de la fiche introuvable');
-      return;
-    }
+    if (!lessonId) return;
     try {
+      setActionLoading({ id: lessonId, type: 'publish' });
       await apiClient.post(`/admin/lessons/${lessonId}/publish`);
       success('Fiche validée et publiée avec succès !');
-      await loadLessons();
+      setLessons((prev) => prev.map((l) => (l.id === lessonId || l._id === lessonId ? { ...l, status: 'PUBLISHED' } : l)));
+      await loadLessons(true);
     } catch {
       error('Échec de la publication');
+    } finally {
+      setActionLoading(null);
     }
   };
 
   const handleArchive = async (lesson: AdminLessonItem) => {
     const lessonId = lesson.id || lesson._id;
-    if (!lessonId) {
-      error('Identifiant de la fiche introuvable');
-      return;
-    }
+    if (!lessonId) return;
     try {
+      setActionLoading({ id: lessonId, type: 'archive' });
       await apiClient.delete(`/admin/lessons/${lessonId}`);
       success('Fiche archivée avec succès');
-      await loadLessons();
+      setLessons((prev) => prev.map((l) => (l.id === lessonId || l._id === lessonId ? { ...l, status: 'ARCHIVED' } : l)));
+      await loadLessons(true);
     } catch {
       error('Échec de l’archivage');
+    } finally {
+      setActionLoading(null);
     }
   };
 
-  const filteredLessons = lessons.filter((l) => {
-    if (statusFilter === 'ALL') return true;
-    return l.status === statusFilter;
-  });
-
+  const filteredLessons = lessons.filter((l) => statusFilter === 'ALL' || l.status === statusFilter);
   const draftCount = lessons.filter((l) => l.status === 'DRAFT').length;
   const publishedCount = lessons.filter((l) => l.status === 'PUBLISHED').length;
 
   return (
     <div className="space-y-6 animate-fade-in text-left">
-      {/* En-tête */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-800 pb-4">
         <div>
           <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight flex items-center gap-2">
@@ -128,7 +117,7 @@ export const AdminLessonsView: React.FC = () => {
           </button>
           <button
             type="button"
-            onClick={loadLessons}
+            onClick={() => loadLessons(false)}
             aria-label="Actualiser"
             className="p-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 hover:text-white transition-colors"
           >
@@ -137,7 +126,6 @@ export const AdminLessonsView: React.FC = () => {
         </div>
       </div>
 
-      {/* Onglets Filtres par Statut */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1">
         <button
           type="button"
@@ -174,7 +162,6 @@ export const AdminLessonsView: React.FC = () => {
         </button>
       </div>
 
-      {/* Tableau des Fiches */}
       <div className="bg-slate-800/90 rounded-2xl border border-slate-700 shadow-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs sm:text-sm">
@@ -230,20 +217,13 @@ export const AdminLessonsView: React.FC = () => {
                             : 'bg-slate-700 text-slate-300 border border-slate-600'
                         }`}
                       >
-                        {l.status === 'PUBLISHED'
-                          ? 'Publiée'
-                          : l.status === 'DRAFT'
-                          ? 'Brouillon'
-                          : 'Archivée'}
+                        {l.status === 'PUBLISHED' ? 'Publiée' : l.status === 'DRAFT' ? 'Brouillon' : 'Archivée'}
                       </span>
                     </td>
                     <td className="p-4 text-right space-x-2 whitespace-nowrap">
                       <button
                         type="button"
-                        onClick={() => {
-                          setSelectedLessonForEdit(l);
-                          setIsEditModalOpen(true);
-                        }}
+                        onClick={() => { setSelectedLessonForEdit(l); setIsEditModalOpen(true); }}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600/20 border border-blue-500/40 text-blue-300 hover:bg-blue-600/30 text-xs font-semibold transition-colors"
                       >
                         <Edit3 className="w-3.5 h-3.5" />
@@ -252,20 +232,30 @@ export const AdminLessonsView: React.FC = () => {
                       {l.status !== 'PUBLISHED' && (
                         <button
                           type="button"
+                          disabled={actionLoading?.id === (l.id || l._id)}
                           onClick={() => handlePublish(l)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600/20 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-600/30 text-xs font-semibold transition-colors"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600/20 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-600/30 text-xs font-semibold transition-colors disabled:opacity-50"
                         >
-                          <CheckCircle className="w-3.5 h-3.5" />
+                          {actionLoading?.id === (l.id || l._id) && actionLoading?.type === 'publish' ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <CheckCircle className="w-3.5 h-3.5" />
+                          )}
                           <span>Publier</span>
                         </button>
                       )}
                       {l.status !== 'ARCHIVED' && (
                         <button
                           type="button"
+                          disabled={actionLoading?.id === (l.id || l._id)}
                           onClick={() => handleArchive(l)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-700/60 border border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white text-xs font-medium transition-colors"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-700/60 border border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white text-xs font-medium transition-colors disabled:opacity-50"
                         >
-                          <Archive className="w-3.5 h-3.5" />
+                          {actionLoading?.id === (l.id || l._id) && actionLoading?.type === 'archive' ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Archive className="w-3.5 h-3.5" />
+                          )}
                           <span>Archiver</span>
                         </button>
                       )}
@@ -278,7 +268,6 @@ export const AdminLessonsView: React.FC = () => {
         </div>
       </div>
 
-      {/* Modale d'Édition Pédagogique */}
       <EditLessonModal
         isOpen={isEditModalOpen}
         onClose={() => {
@@ -286,7 +275,7 @@ export const AdminLessonsView: React.FC = () => {
           setSelectedLessonForEdit(null);
         }}
         lesson={selectedLessonForEdit}
-        onSuccess={loadLessons}
+        onSuccess={() => loadLessons(true)}
       />
     </div>
   );

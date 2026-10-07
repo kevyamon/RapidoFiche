@@ -20,11 +20,12 @@ export const AdminLessonsPage: React.FC = () => {
   const [lessons, setLessons] = useState<AdminLessonItem[]>([]);
   const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const { success, error } = useToast();
 
-  const loadLessons = useCallback(async () => {
+  const loadLessons = useCallback(async (silent = false) => {
     try {
-      setIsLoading(true);
+      if (!silent) setIsLoading(true);
       const res = await apiClient.get('/lessons', {
         params: { search, limit: 30 },
       });
@@ -34,7 +35,7 @@ export const AdminLessonsPage: React.FC = () => {
     } catch {
       error('Impossible de charger les fiches');
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   }, [search, error]);
 
@@ -44,21 +45,33 @@ export const AdminLessonsPage: React.FC = () => {
 
   const handlePublish = async (lessonId: string) => {
     try {
+      setActionLoadingId(lessonId);
       await AdminService.publishLesson(lessonId);
       success('Fiche publiée avec succès');
-      await loadLessons();
+      setLessons((prev) =>
+        prev.map((l) => (l.id === lessonId ? { ...l, status: 'PUBLISHED' } : l))
+      );
+      await loadLessons(true);
     } catch {
       error('Échec de la publication');
+    } finally {
+      setActionLoadingId(null);
     }
   };
 
   const handleArchive = async (lessonId: string) => {
     try {
+      setActionLoadingId(lessonId);
       await AdminService.archiveLesson(lessonId);
       success('Fiche archivée avec succès');
-      await loadLessons();
+      setLessons((prev) =>
+        prev.map((l) => (l.id === lessonId ? { ...l, status: 'ARCHIVED' } : l))
+      );
+      await loadLessons(true);
     } catch {
       error('Échec de l’archivage');
+    } finally {
+      setActionLoadingId(null);
     }
   };
 
@@ -157,6 +170,8 @@ export const AdminLessonsPage: React.FC = () => {
                         <Button
                           variant="secondary"
                           size="sm"
+                          disabled={actionLoadingId === l.id}
+                          isLoading={actionLoadingId === l.id}
                           onClick={() => handlePublish(l.id)}
                           leftIcon={<CheckCircle className="w-3.5 h-3.5" />}
                         >
@@ -167,6 +182,8 @@ export const AdminLessonsPage: React.FC = () => {
                         <Button
                           variant="outline"
                           size="sm"
+                          disabled={actionLoadingId === l.id}
+                          isLoading={actionLoadingId === l.id}
                           onClick={() => handleArchive(l.id)}
                           leftIcon={<Archive className="w-3.5 h-3.5" />}
                         >

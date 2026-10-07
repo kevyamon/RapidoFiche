@@ -114,6 +114,12 @@ export const LessonsPage: React.FC = () => {
   };
 
   const handleToggleFavorite = async (lessonId: string) => {
+    setLessons((prev) =>
+      prev.map((l) => {
+        const lid = l.id || (l as any)._id;
+        return lid === lessonId ? { ...l, isFavorite: !l.isFavorite } : l;
+      })
+    );
     await apiClient.post('/favorites/toggle', { lessonId });
   };
 

@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { UploadCloud, FileText, X, AlertCircle, Loader2, CheckCircle2, Layers, BookOpen, Sparkles } from 'lucide-react';
-import { AdminService, ImportBatchSummary } from '../../../services/admin.service';
+import { AdminService } from '../../../services/admin.service';
 import { apiClient } from '../../../api/client';
 import { useToast } from '../../ui/Toast';
-import { useSocketEvent } from '../../../context/SocketContext';
-import { AdminBatchHistoryList } from './AdminBatchHistoryList';
 
 interface LevelOption {
   id: string;
@@ -25,7 +23,6 @@ export const AdminImportView: React.FC = () => {
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>('');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
-  const [batches, setBatches] = useState<ImportBatchSummary[]>([]);
   const { success, error } = useToast();
 
   useEffect(() => {
@@ -45,7 +42,6 @@ export const AdminImportView: React.FC = () => {
       }
     };
     fetchPedagogy();
-    loadBatches();
   }, []);
 
   useEffect(() => {
@@ -67,17 +63,6 @@ export const AdminImportView: React.FC = () => {
     };
     fetchSubjects();
   }, [selectedLevelId]);
-
-  const loadBatches = async () => {
-    try {
-      const data = await AdminService.getBatches();
-      setBatches(Array.isArray(data) ? data : []);
-    } catch {
-      setBatches([]);
-    }
-  };
-
-  useSocketEvent('ADMIN_BATCH_UPDATED', () => loadBatches());
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -104,7 +89,6 @@ export const AdminImportView: React.FC = () => {
       const createdBatch = await AdminService.uploadBatch(selectedFiles, options);
       success(`Lot "${createdBatch.batchName}" importé avec succès (${createdBatch.successfulFiles} réussis)`);
       setSelectedFiles([]);
-      await loadBatches();
     } catch (err: unknown) {
       const errObj = err as { response?: { data?: { error?: { message?: string } } } };
       error(errObj.response?.data?.error?.message || 'Échec de l’importation du lot');
@@ -284,9 +268,7 @@ export const AdminImportView: React.FC = () => {
           </div>
         </div>
       )}
-
-      {/* Historique des Lots */}
-      <AdminBatchHistoryList batches={batches} />
     </div>
   );
 };
+

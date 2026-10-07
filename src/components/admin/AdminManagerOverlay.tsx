@@ -5,7 +5,6 @@ import { AdminDashboardView } from './views/AdminDashboardView';
 import { AdminLessonsView } from './views/AdminLessonsView';
 import { AdminImportView } from './views/AdminImportView';
 import { AdminUsersView } from './views/AdminUsersView';
-import { AdminAuditLogsView } from './views/AdminAuditLogsView';
 import {
   LayoutDashboard,
   BookOpen,
@@ -13,14 +12,12 @@ import {
   Users,
   ShieldCheck,
   LogOut,
-  Minimize2,
   Crown,
 } from 'lucide-react';
 
 export const AdminManagerOverlay: React.FC = () => {
   const {
     isManagerOpen,
-    closeManager,
     logoutAdmin,
     adminUser,
     isSuperAdmin,
@@ -37,7 +34,6 @@ export const AdminManagerOverlay: React.FC = () => {
     { id: 'lessons', label: 'Fiches', icon: BookOpen },
     { id: 'import', label: 'Importation', icon: UploadCloud },
     { id: 'users', label: 'Utilisateurs', icon: Users },
-    { id: 'audit', label: 'Audit & Sécurité', icon: ShieldCheck },
   ];
 
   return (
@@ -62,7 +58,11 @@ export const AdminManagerOverlay: React.FC = () => {
                 }`}
               >
                 {isSuperAdmin && <Crown className="w-2.5 h-2.5 text-amber-400 shrink-0" />}
-                {adminUser.role}
+                {adminUser.role === 'SUPER_ADMIN'
+                  ? 'Super-Administrateur'
+                  : adminUser.role === 'ADMIN'
+                  ? 'Administrateur'
+                  : 'Gestionnaire'}
               </span>
             </div>
             <p className="text-[10px] sm:text-xs text-slate-400 truncate">
@@ -75,23 +75,13 @@ export const AdminManagerOverlay: React.FC = () => {
         <div className="flex items-center gap-1.5 shrink-0">
           <button
             type="button"
-            onClick={closeManager}
-            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 border border-slate-700 transition-colors"
-            title="Réduire sans déconnecter"
-            aria-label="Réduire"
-          >
-            <Minimize2 className="w-3.5 h-3.5" />
-            <span className="hidden md:inline">Réduire</span>
-          </button>
-          <button
-            type="button"
             onClick={logoutAdmin}
-            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-red-950/60 border border-red-800/60 hover:bg-red-900/80 text-xs font-semibold text-red-200 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-950/60 border border-red-800/60 hover:bg-red-900/80 text-xs font-semibold text-red-200 transition-colors"
             title="Déconnexion administrative"
             aria-label="Déconnexion"
           >
             <LogOut className="w-3.5 h-3.5" />
-            <span className="hidden md:inline">Déconnexion</span>
+            <span>Déconnexion</span>
           </button>
         </div>
       </header>
@@ -126,9 +116,9 @@ export const AdminManagerOverlay: React.FC = () => {
           {activeTab === 'lessons' && <AdminLessonsView />}
           {activeTab === 'import' && <AdminImportView />}
           {activeTab === 'users' && <AdminUsersView />}
-          {activeTab === 'audit' && <AdminAuditLogsView />}
         </div>
       </main>
     </div>
   );
 };
+

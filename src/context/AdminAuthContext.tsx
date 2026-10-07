@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { adminAuthApi, AdminUser, AdminLoginDto, AdminRegisterDto } from '../api/adminAuthApi';
 
-export type AdminTab = 'dashboard' | 'lessons' | 'import' | 'users' | 'audit';
+export type AdminTab = 'dashboard' | 'lessons' | 'import' | 'users';
 
 interface AdminAuthContextType {
   adminUser: AdminUser | null;
@@ -24,6 +24,8 @@ const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefin
 
 const ADMIN_STORAGE_KEY = 'rapidofiche_admin_user';
 const ADMIN_TOKEN_KEY = 'rapidofiche_admin_token';
+const ADMIN_OPEN_KEY = 'rapidofiche_admin_manager_open';
+const ADMIN_TAB_KEY = 'rapidofiche_admin_active_tab';
 
 export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [adminUser, setAdminUser] = useState<AdminUser | null>(() => {
@@ -36,8 +38,28 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   });
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [isManagerOpen, setIsManagerOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
+  const [isManagerOpen, setIsManagerOpen] = useState<boolean>(() => {
+    const token = localStorage.getItem(ADMIN_TOKEN_KEY);
+    const user = localStorage.getItem(ADMIN_STORAGE_KEY);
+    const wasOpen = localStorage.getItem(ADMIN_OPEN_KEY);
+    if (token && user) {
+      return wasOpen !== 'false';
+    }
+    return false;
+  });
+
+  const [activeTab, setActiveTabState] = useState<AdminTab>(() => {
+    const savedTab = localStorage.getItem(ADMIN_TAB_KEY) as AdminTab;
+    if (savedTab && ['dashboard', 'lessons', 'import', 'users'].includes(savedTab)) {
+      return savedTab;
+    }
+    return 'dashboard';
+  });
+
+  const setActiveTab = (tab: AdminTab) => {
+    setActiveTabState(tab);
+    localStorage.setItem(ADMIN_TAB_KEY, tab);
+  };
 
   const isAdmin = !!adminUser && (adminUser.role === 'ADMIN' || adminUser.role === 'SUPER_ADMIN');
   const isSuperAdmin = !!adminUser && adminUser.role === 'SUPER_ADMIN';
@@ -45,6 +67,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const handleOpenStealth = useCallback(() => {
     const savedToken = localStorage.getItem(ADMIN_TOKEN_KEY);
     if (savedToken && adminUser) {
+      localStorage.setItem(ADMIN_OPEN_KEY, 'true');
       setIsManagerOpen(true);
       setIsAuthModalOpen(false);
     } else {
@@ -65,6 +88,8 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const handleSessionExpired = () => {
       localStorage.removeItem(ADMIN_STORAGE_KEY);
       localStorage.removeItem(ADMIN_TOKEN_KEY);
+      localStorage.removeItem(ADMIN_OPEN_KEY);
+      localStorage.removeItem(ADMIN_TAB_KEY);
       localStorage.removeItem('rapidofiche_access_token');
       localStorage.removeItem('rapidofiche_refresh_token');
       setAdminUser(null);
@@ -82,6 +107,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(result.user));
     localStorage.setItem(ADMIN_TOKEN_KEY, result.accessToken);
     localStorage.setItem('rapidofiche_access_token', result.accessToken);
+    localStorage.setItem(ADMIN_OPEN_KEY, 'true');
     if (result.tokens?.refreshToken) {
       localStorage.setItem('rapidofiche_refresh_token', result.tokens.refreshToken);
     }
@@ -95,6 +121,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(result.user));
     localStorage.setItem(ADMIN_TOKEN_KEY, result.accessToken);
     localStorage.setItem('rapidofiche_access_token', result.accessToken);
+    localStorage.setItem(ADMIN_OPEN_KEY, 'true');
     if (result.tokens?.refreshToken) {
       localStorage.setItem('rapidofiche_refresh_token', result.tokens.refreshToken);
     }
@@ -106,6 +133,8 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const logoutAdmin = (): void => {
     localStorage.removeItem(ADMIN_STORAGE_KEY);
     localStorage.removeItem(ADMIN_TOKEN_KEY);
+    localStorage.removeItem(ADMIN_OPEN_KEY);
+    localStorage.removeItem(ADMIN_TAB_KEY);
     localStorage.removeItem('rapidofiche_access_token');
     localStorage.removeItem('rapidofiche_refresh_token');
     setAdminUser(null);
@@ -115,8 +144,14 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const openAuthModal = () => setIsAuthModalOpen(true);
   const closeAuthModal = () => setIsAuthModalOpen(false);
-  const openManager = () => setIsManagerOpen(true);
-  const closeManager = () => setIsManagerOpen(false);
+  const openManager = () => {
+    localStorage.setItem(ADMIN_OPEN_KEY, 'true');
+    setIsManagerOpen(true);
+  };
+  const closeManager = () => {
+    localStorage.setItem(ADMIN_OPEN_KEY, 'false');
+    setIsManagerOpen(false);
+  };
 
   return (
     <AdminAuthContext.Provider
@@ -149,3 +184,4 @@ export const useAdminAuth = (): AdminAuthContextType => {
   }
   return context;
 };
+

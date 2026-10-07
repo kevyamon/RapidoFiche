@@ -11,20 +11,21 @@ export const AdminUsersPage: React.FC = () => {
   const [levels, setLevels] = useState<Array<{ id: string; _id?: string; code: string; label: string }>>([]);
   const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [actionUserId, setActionUserId] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<AdminUserItem | null>(null);
   const [newLevelId, setNewLevelId] = useState('');
   const [isLevelModalOpen, setIsLevelModalOpen] = useState(false);
   const { success, error } = useToast();
 
-  const loadUsers = useCallback(async () => {
+  const loadUsers = useCallback(async (silent = false) => {
     try {
-      setIsLoading(true);
+      if (!silent) setIsLoading(true);
       const data = await AdminService.getUsers({ search });
       setUsers(data.users || []);
     } catch {
       error('Impossible de charger la liste des enseignants');
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   }, [search, error]);
 
@@ -47,11 +48,17 @@ export const AdminUsersPage: React.FC = () => {
   const handleToggleStatus = async (user: AdminUserItem) => {
     const nextStatus = user.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
     try {
+      setActionUserId(user.id);
       await AdminService.updateUserStatus(user.id, nextStatus);
       success(`Statut mis à jour pour ${user.firstName} ${user.lastName}`);
-      await loadUsers();
+      setUsers((prev) =>
+        prev.map((u) => (u.id === user.id ? { ...u, status: nextStatus } : u))
+      );
+      await loadUsers(true);
     } catch {
       error('Échec de la modification du statut');
+    } finally {
+      setActionUserId(null);
     }
   };
 
@@ -67,7 +74,7 @@ export const AdminUsersPage: React.FC = () => {
       await AdminService.updateUserLevel(selectedUser.id, newLevelId);
       success('Niveau de classe réassigné avec succès');
       setIsLevelModalOpen(false);
-      await loadUsers();
+      await loadUsers(true);
     } catch {
       error('Échec de la réassignation du niveau');
     }
@@ -160,6 +167,8 @@ export const AdminUsersPage: React.FC = () => {
                       <Button
                         variant={u.status === 'ACTIVE' ? 'danger' : 'outline'}
                         size="sm"
+                        disabled={actionUserId === u.id}
+                        isLoading={actionUserId === u.id}
                         onClick={() => handleToggleStatus(u)}
                         leftIcon={<ShieldAlert className="w-3.5 h-3.5" />}
                       >

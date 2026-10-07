@@ -106,8 +106,8 @@ export const EditLessonModal: React.FC<EditLessonModalProps> = ({
         lesson.status === 'PUBLISHED'
           ? 'PUBLISHED'
           : lesson.status === 'ARCHIVED'
-          ? 'ARCHIVED'
-          : 'DRAFT'
+            ? 'ARCHIVED'
+            : 'DRAFT'
       );
     }
   }, [lesson, isOpen]);

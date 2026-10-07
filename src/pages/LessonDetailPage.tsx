@@ -4,6 +4,7 @@ import { apiClient } from '../api/client';
 import { offlineStorage } from '../services/offline.storage';
 import { useAuth } from '../context/AuthContext';
 import { useSubscription } from '../context/SubscriptionContext';
+import { useSocketEvent } from '../context/SocketContext';
 import { PdfViewer } from '../components/viewer/PdfViewer';
 import { LessonActionHeader } from '../components/lessons/LessonActionHeader';
 import { LessonAccessBlocked } from '../components/lessons/LessonAccessBlocked';
@@ -19,6 +20,7 @@ export const LessonDetailPage: React.FC = () => {
   const { success, error: toastError, info } = useToast();
 
   const [title, setTitle] = useState<string>('Fiche Pédagogique');
+  const [lessonMeta, setLessonMeta] = useState<any>(null);
 
   useSeo({
     title: title || 'Fiche Pédagogique Numérique',
@@ -31,6 +33,12 @@ export const LessonDetailPage: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isOfflineSaved, setIsOfflineSaved] = useState<boolean>(false);
   const [isFavorite, setIsFavorite] = useState<boolean>(false);
+
+  useSocketEvent('FAVORITE_UPDATED', (data: { lessonId: string; isFavorite: boolean }) => {
+    if (data?.lessonId === id) {
+      setIsFavorite(data.isFavorite);
+    }
+  });
 
   const hasVerifiedRef = React.useRef<boolean>(false);
 
@@ -93,13 +101,15 @@ export const LessonDetailPage: React.FC = () => {
       const accessData = accessRes.data?.data;
       const streamToken = accessData?.accessToken || accessData?.token;
 
-      if (accessData?.lesson?.title) {
-        setTitle(accessData.lesson.title);
+      if (accessData?.lesson) {
+        setLessonMeta(accessData.lesson);
+        if (accessData.lesson.title) setTitle(accessData.lesson.title);
       } else {
         try {
           const detailRes = await apiClient.get(`/lessons/${id}`);
-          if (detailRes.data?.data?.title) {
-            setTitle(detailRes.data.data.title);
+          if (detailRes.data?.data) {
+            setLessonMeta(detailRes.data.data);
+            if (detailRes.data.data.title) setTitle(detailRes.data.data.title);
           }
         } catch {
           // Ignorer
@@ -212,7 +222,14 @@ export const LessonDetailPage: React.FC = () => {
         const response = await fetch(pdfBlobUrl);
         const blob = await response.blob();
         await offlineStorage.saveLesson(
-          { id, title },
+          {
+            id,
+            title,
+            levelId: lessonMeta?.levelId,
+            subjectId: lessonMeta?.subjectId,
+            week: lessonMeta?.week,
+            topic: lessonMeta?.topic,
+          },
           blob,
           user.id,
           subscription.endDate

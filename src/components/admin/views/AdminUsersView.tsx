@@ -5,25 +5,40 @@ import { apiClient } from '../../../api/client';
 import { useToast } from '../../ui/Toast';
 import { useSocketEvent } from '../../../context/SocketContext';
 
+const getRoleMeta = (role: string) => {
+  switch (role) {
+    case 'ADMIN':
+      return { label: 'Administrateur', style: 'bg-purple-500/15 text-purple-300 border-purple-500/30' };
+    case 'CONTENT_MANAGER':
+      return { label: 'Gestionnaire Contenu', style: 'bg-amber-500/15 text-amber-300 border-amber-500/30' };
+    case 'TEACHER':
+    default:
+      return { label: 'Enseignant', style: 'bg-blue-500/15 text-blue-300 border-blue-500/30' };
+  }
+};
+
 export const AdminUsersView: React.FC = () => {
   const [users, setUsers] = useState<AdminUserItem[]>([]);
   const [levels, setLevels] = useState<Array<{ id: string; _id?: string; code: string; label: string }>>([]);
   const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [actionUserId, setActionUserId] = useState<string | null>(null);
+  const [isSavingLevel, setIsSavingLevel] = useState(false);
   const [selectedUser, setSelectedUser] = useState<AdminUserItem | null>(null);
   const [newLevelId, setNewLevelId] = useState('');
   const [isLevelModalOpen, setIsLevelModalOpen] = useState(false);
   const { success, error } = useToast();
 
-  const loadUsers = useCallback(async () => {
+  const loadUsers = useCallback(async (silent = false) => {
     try {
-      setIsLoading(true);
+      if (!silent) setIsLoading(true);
       const data = await AdminService.getUsers({ search });
-      setUsers(data.users || []);
+      const list = (data.users || []).filter((u: any) => u.role !== 'SUPER_ADMIN');
+      setUsers(list);
     } catch {
       error('Impossible de charger la liste des utilisateurs');
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   }, [search, error]);
 
@@ -31,20 +46,13 @@ export const AdminUsersView: React.FC = () => {
     loadUsers();
   }, [loadUsers]);
 
-  // Actualisation temps réel lors d'une nouvelle inscription ou modification de compte
-  useSocketEvent('ADMIN_USERS_UPDATED', () => loadUsers());
-  useSocketEvent('USER_REGISTERED', () => loadUsers());
+  useSocketEvent('ADMIN_USERS_UPDATED', () => loadUsers(true));
+  useSocketEvent('USER_REGISTERED', () => loadUsers(true));
 
   useEffect(() => {
-    const fetchLevels = async () => {
-      try {
-        const res = await apiClient.get('/levels');
-        if (res.data?.success) setLevels(res.data.data);
-      } catch {
-        // Mode silencieux
-      }
-    };
-    fetchLevels();
+    apiClient.get('/levels').then((res) => {
+      if (res.data?.success) setLevels(res.data.data);
+    }).catch(() => {});
   }, []);
 
   const handleToggleStatus = async (user: AdminUserItem) => {
@@ -52,11 +60,17 @@ export const AdminUsersView: React.FC = () => {
     if (!userId) return;
     const nextStatus = user.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
     try {
+      setActionUserId(userId);
       await AdminService.updateUserStatus(userId, nextStatus);
       success(`Statut mis à jour pour ${user.firstName} ${user.lastName}`);
-      await loadUsers();
+      setUsers((prev) =>
+        prev.map((u) => ((u.id || (u as any)._id) === userId ? { ...u, status: nextStatus } : u))
+      );
+      await loadUsers(true);
     } catch {
       error('Échec de la modification du statut');
+    } finally {
+      setActionUserId(null);
     }
   };
 
@@ -71,18 +85,20 @@ export const AdminUsersView: React.FC = () => {
     const userId = selectedUser?.id || (selectedUser as any)?._id;
     if (!userId || !newLevelId) return;
     try {
+      setIsSavingLevel(true);
       await AdminService.updateUserLevel(userId, newLevelId);
       success('Niveau scolaire réassigné avec succès');
       setIsLevelModalOpen(false);
-      await loadUsers();
+      await loadUsers(true);
     } catch {
       error('Échec de la réassignation');
+    } finally {
+      setIsSavingLevel(false);
     }
   };
 
   return (
     <div className="space-y-6 animate-fade-in text-left">
-      {/* En-tête */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-800 pb-4">
         <div>
           <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight flex items-center gap-2">
@@ -107,7 +123,7 @@ export const AdminUsersView: React.FC = () => {
           </div>
           <button
             type="button"
-            onClick={loadUsers}
+            onClick={() => loadUsers(false)}
             aria-label="Actualiser"
             className="p-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 hover:text-white transition-colors shrink-0"
           >
@@ -116,7 +132,6 @@ export const AdminUsersView: React.FC = () => {
         </div>
       </div>
 
-      {/* Tableau des Utilisateurs */}
       <div className="bg-slate-800/90 rounded-2xl border border-slate-700 shadow-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs sm:text-sm">
@@ -139,71 +154,72 @@ export const AdminUsersView: React.FC = () => {
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="p-10 text-center text-slate-400">
-                    Aucun utilisateur trouvé.
-                  </td>
+                  <td colSpan={5} className="p-10 text-center text-slate-400">Aucun utilisateur trouvé.</td>
                 </tr>
               ) : (
-                users.map((u) => (
-                  <tr key={u.id || (u as any)._id || u.email} className="hover:bg-slate-700/40 transition-colors">
-                    <td className="p-4">
-                      <p className="font-semibold text-white">
-                        {u.firstName} {u.lastName}
-                      </p>
-                      <p className="text-xs text-slate-400">{u.email}</p>
-                    </td>
-                    <td className="p-4">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-slate-700 text-slate-300 border border-slate-600">
-                        {u.role}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-bold bg-blue-500/10 text-blue-300 border border-blue-500/30">
-                        {u.primaryLevelId?.code || 'Non assigné'}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+                users.map((u) => {
+                  const roleMeta = getRoleMeta(u.role);
+                  return (
+                    <tr key={u.id || (u as any)._id || u.email} className="hover:bg-slate-700/40 transition-colors">
+                      <td className="p-4">
+                        <p className="font-semibold text-white">{u.firstName} {u.lastName}</p>
+                        <p className="text-xs text-slate-400">{u.email}</p>
+                      </td>
+                      <td className="p-4">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold border ${roleMeta.style}`}>
+                          {roleMeta.label}
+                        </span>
+                      </td>
+                      <td className="p-4">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-bold bg-blue-500/10 text-blue-300 border border-blue-500/30">
+                          {u.primaryLevelId?.code || 'Non assigné'}
+                        </span>
+                      </td>
+                      <td className="p-4">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
                           u.status === 'ACTIVE'
                             ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30'
                             : 'bg-red-500/10 text-red-300 border border-red-500/30'
-                        }`}
-                      >
-                        {u.status === 'ACTIVE' ? 'Actif' : 'Suspendu'}
-                      </span>
-                    </td>
-                    <td className="p-4 text-right space-x-2 whitespace-nowrap">
-                      <button
-                        type="button"
-                        onClick={() => handleOpenLevelModal(u)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-semibold transition-colors"
-                      >
-                        <GraduationCap className="w-3.5 h-3.5" />
-                        <span>Classe</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleToggleStatus(u)}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                          u.status === 'ACTIVE'
-                            ? 'bg-red-950/60 border border-red-800/60 text-red-300 hover:bg-red-900/80'
-                            : 'bg-emerald-950/60 border border-emerald-800/60 text-emerald-300 hover:bg-emerald-900/80'
-                        }`}
-                      >
-                        <ShieldAlert className="w-3.5 h-3.5" />
-                        <span>{u.status === 'ACTIVE' ? 'Suspendre' : 'Réactiver'}</span>
-                      </button>
-                    </td>
-                  </tr>
-                ))
+                        }`}>
+                          {u.status === 'ACTIVE' ? 'Actif' : 'Suspendu'}
+                        </span>
+                      </td>
+                      <td className="p-4 text-right space-x-2 whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenLevelModal(u)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-semibold transition-colors"
+                        >
+                          <GraduationCap className="w-3.5 h-3.5" />
+                          <span>Classe</span>
+                        </button>
+                        <button
+                          type="button"
+                          disabled={actionUserId === (u.id || (u as any)._id)}
+                          onClick={() => handleToggleStatus(u)}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 ${
+                            u.status === 'ACTIVE'
+                              ? 'bg-red-950/60 border border-red-800/60 text-red-300 hover:bg-red-900/80'
+                              : 'bg-emerald-950/60 border border-emerald-800/60 text-emerald-300 hover:bg-emerald-900/80'
+                          }`}
+                        >
+                          {actionUserId === (u.id || (u as any)._id) ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <ShieldAlert className="w-3.5 h-3.5" />
+                          )}
+                          <span>{u.status === 'ACTIVE' ? 'Suspendre' : 'Réactiver'}</span>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Modale de Changement de Classe Furtive */}
       {isLevelModalOpen && selectedUser && (
         <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
           <div className="w-full max-w-md bg-slate-900 border border-slate-700 rounded-2xl p-6 shadow-2xl space-y-4">
@@ -220,11 +236,9 @@ export const AdminUsersView: React.FC = () => {
                 <X className="w-4 h-4" />
               </button>
             </div>
-
             <p className="text-xs text-slate-300">
               Sélectionnez le nouveau niveau pour <strong>{selectedUser.firstName} {selectedUser.lastName}</strong> :
             </p>
-
             <div>
               <select
                 value={newLevelId}
@@ -239,7 +253,6 @@ export const AdminUsersView: React.FC = () => {
                 ))}
               </select>
             </div>
-
             <div className="flex justify-end gap-2 pt-2">
               <button
                 type="button"
@@ -250,10 +263,12 @@ export const AdminUsersView: React.FC = () => {
               </button>
               <button
                 type="button"
+                disabled={isSavingLevel}
                 onClick={handleSaveLevel}
-                className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-lg shadow-blue-600/20 transition-colors"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-lg shadow-blue-600/20 transition-colors disabled:opacity-50"
               >
-                Enregistrer
+                {isSavingLevel && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                <span>Enregistrer</span>
               </button>
             </div>
           </div>

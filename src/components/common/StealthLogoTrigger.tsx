@@ -49,9 +49,13 @@ export const StealthLogoTrigger: React.FC<StealthLogoTriggerProps> = ({
     window.dispatchEvent(new CustomEvent('open-stealth-admin'));
   }, [resetAll]);
 
-  const handleStart = (e: React.PointerEvent | React.TouchEvent | React.MouseEvent) => {
-    // Bloquer le menu contextuel natif ou comportement par défaut de l'image
-    if ('button' in e && e.button !== 0 && (e as React.MouseEvent).button !== 0) return;
+  const handleStart = (e: React.SyntheticEvent) => {
+    // Empêcher l'ouverture du menu natif de téléchargement / sauvegarde d'image sur mobile
+    if (e.cancelable && e.type.startsWith('touch')) {
+      e.preventDefault();
+    }
+
+    if ('button' in e && (e as React.MouseEvent).button !== 0) return;
 
     // 1. Détection des multi-taps rapides (5 taps consécutifs)
     tapCountRef.current += 1;
@@ -86,7 +90,10 @@ export const StealthLogoTrigger: React.FC<StealthLogoTriggerProps> = ({
     }, TICK_INTERVAL_MS);
   };
 
-  const handleEndOrCancel = () => {
+  const handleEndOrCancel = (e?: React.SyntheticEvent) => {
+    if (e && e.cancelable && e.type.startsWith('touch')) {
+      e.preventDefault();
+    }
     if (isPressingRef.current) {
       if (longPressTimerRef.current) {
         clearInterval(longPressTimerRef.current);
@@ -97,7 +104,7 @@ export const StealthLogoTrigger: React.FC<StealthLogoTriggerProps> = ({
     }
   };
 
-  const preventContextMenu = (e: React.SyntheticEvent) => {
+  const preventNativeActions = (e: React.SyntheticEvent) => {
     e.preventDefault();
     e.stopPropagation();
     return false;
@@ -112,21 +119,23 @@ export const StealthLogoTrigger: React.FC<StealthLogoTriggerProps> = ({
       role="button"
       tabIndex={0}
       aria-label="RapidoFiche"
-      onPointerDown={handleStart}
-      onPointerUp={handleEndOrCancel}
-      onPointerLeave={handleEndOrCancel}
-      onPointerCancel={handleEndOrCancel}
+      onMouseDown={handleStart}
+      onMouseUp={handleEndOrCancel}
+      onMouseLeave={handleEndOrCancel}
       onTouchStart={handleStart}
       onTouchEnd={handleEndOrCancel}
       onTouchCancel={handleEndOrCancel}
-      onContextMenu={preventContextMenu}
-      onDragStart={preventContextMenu}
-      className={`relative inline-block select-none cursor-pointer touch-manipulation no-touch-callout focus:outline-none ${className}`}
+      onContextMenu={preventNativeActions}
+      onDragStart={preventNativeActions}
+      className={`relative inline-block select-none cursor-pointer touch-none focus:outline-none ${className}`}
       style={{
         WebkitTouchCallout: 'none',
         WebkitUserSelect: 'none',
+        KhtmlUserSelect: 'none',
+        MozUserSelect: 'none',
+        msUserSelect: 'none',
         userSelect: 'none',
-        touchAction: 'manipulation',
+        touchAction: 'none',
       }}
     >
       {/* Anneau Circulaire de Progression Furtive */}
@@ -154,8 +163,8 @@ export const StealthLogoTrigger: React.FC<StealthLogoTriggerProps> = ({
         src="/logo.png"
         alt={alt}
         draggable={false}
-        onContextMenu={preventContextMenu}
-        onDragStart={preventContextMenu}
+        onContextMenu={preventNativeActions}
+        onDragStart={preventNativeActions}
         className={`${imageClassName} pointer-events-none select-none ${
           progress > 0 ? 'scale-95 transition-transform' : ''
         }`}
@@ -169,3 +178,4 @@ export const StealthLogoTrigger: React.FC<StealthLogoTriggerProps> = ({
     </div>
   );
 };
+

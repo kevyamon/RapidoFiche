@@ -1,28 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { UploadCloud, FileText, X, AlertCircle } from 'lucide-react';
-import { AdminService, ImportBatchSummary } from '../../services/admin.service';
-import { ImportBatchStatus } from '../../components/admin/ImportBatchStatus';
+import { AdminService } from '../../services/admin.service';
 import { Button } from '../../components/ui/Button';
 import { useToast } from '../../components/ui/Toast';
 
 export const AdminImportPage: React.FC = () => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
-  const [batches, setBatches] = useState<ImportBatchSummary[]>([]);
   const { success, error } = useToast();
-
-  const loadBatches = async () => {
-    try {
-      const data = await AdminService.getBatches();
-      setBatches(data);
-    } catch {
-      // Ignorer
-    }
-  };
-
-  useEffect(() => {
-    loadBatches();
-  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -45,7 +30,6 @@ export const AdminImportPage: React.FC = () => {
       const createdBatch = await AdminService.uploadBatch(selectedFiles);
       success(`Lot "${createdBatch.batchName}" importé avec succès`);
       setSelectedFiles([]);
-      await loadBatches();
     } catch (err: any) {
       error(err?.response?.data?.error?.message || 'Échec de l’importation du lot');
     } finally {
@@ -138,18 +122,7 @@ export const AdminImportPage: React.FC = () => {
           </div>
         </div>
       )}
-
-      {/* Historique des Lots */}
-      {batches.length > 0 && (
-        <div className="space-y-4 pt-4">
-          <h2 className="text-lg font-bold text-text-primary">Historique des Lots Traités</h2>
-          <div className="space-y-4">
-            {batches.map((b) => (
-              <ImportBatchStatus key={b.id} batch={b} />
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 };
+

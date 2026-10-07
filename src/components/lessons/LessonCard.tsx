@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bookmark, HardDriveDownload, Check, Clock, Calendar, ArrowRight } from 'lucide-react';
+import { Bookmark, HardDriveDownload, Check, Clock, Calendar, ArrowRight, Loader2 } from 'lucide-react';
 import { offlineStorage } from '../../services/offline.storage';
+import { useAuth } from '../../context/AuthContext';
 import { useSubscription } from '../../context/SubscriptionContext';
+import { useSocketEvent } from '../../context/SocketContext';
+import { apiClient } from '../../api/client';
 import { useToast } from '../ui/Toast';
 
 export interface LessonSummary {
   id: string;
+  _id?: string;
   title: string;
   topic?: string;
   levelId?: { _id?: string; id?: string; code: string; label: string };
@@ -30,58 +34,144 @@ export const LessonCard: React.FC<LessonCardProps> = ({
   onSaveOffline,
 }) => {
   const navigate = useNavigate();
-  const { subscription } = useSubscription();
+  const { user } = useAuth();
+  const { subscription, openPayModal } = useSubscription();
   const { success, error } = useToast();
-  const [isFavorite, setIsFavorite] = useState<boolean>(!!lesson.isFavorite);
+
+  const lessonId = lesson.id || lesson._id || (lesson as any)._id?.toString() || '';
+
+  const [isFavorite, setIsFavorite] = useState<boolean>(Boolean(lesson.isFavorite));
+  const [isTogglingFavorite, setIsTogglingFavorite] = useState<boolean>(false);
   const [isOfflineSaved, setIsOfflineSaved] = useState<boolean>(false);
   const [isSavingOffline, setIsSavingOffline] = useState<boolean>(false);
 
-  const lessonId = lesson.id || (lesson as any)._id || '';
-
+  // Synchronisation avec la prop lesson.isFavorite
   useEffect(() => {
-    if (lessonId) {
-      offlineStorage.isLessonSaved(lessonId).then(setIsOfflineSaved);
+    if (lesson.isFavorite !== undefined) {
+      setIsFavorite(Boolean(lesson.isFavorite));
     }
+  }, [lesson.isFavorite]);
+
+  // Synchronisation de l'état hors-ligne local
+  useEffect(() => {
+    let isMounted = true;
+    if (lessonId) {
+      offlineStorage.isLessonSaved(lessonId).then((saved) => {
+        if (isMounted) setIsOfflineSaved(saved);
+      });
+    }
+    return () => {
+      isMounted = false;
+    };
   }, [lessonId]);
+
+  // Synchronisation temps réel via socket
+  useSocketEvent('FAVORITE_UPDATED', (data: { lessonId: string; isFavorite: boolean }) => {
+    if (data?.lessonId === lessonId) {
+      setIsFavorite(data.isFavorite);
+    }
+  });
 
   const handleFavoriteClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!lessonId) return;
+    if (!lessonId || isTogglingFavorite) return;
+
+    if (!user) {
+      error('Veuillez vous connecter pour gérer vos favoris');
+      return;
+    }
+
+    const previousState = isFavorite;
+    const nextState = !previousState;
+    setIsFavorite(nextState);
+    setIsTogglingFavorite(true);
+
     try {
-      setIsFavorite(!isFavorite);
       if (onToggleFavorite) {
         await onToggleFavorite(lessonId);
+      } else {
+        await apiClient.post('/favorites/toggle', { lessonId });
       }
+      success(nextState ? 'Fiche ajoutée à vos favoris' : 'Fiche retirée de vos favoris');
     } catch {
-      setIsFavorite(isFavorite);
+      setIsFavorite(previousState);
+      error('Impossible de modifier vos favoris');
+    } finally {
+      setIsTogglingFavorite(false);
     }
   };
 
   const handleOfflineClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!lessonId) return;
+    if (!lessonId || isSavingOffline) return;
+
     if (isOfflineSaved) {
-      await offlineStorage.removeLesson(lessonId);
-      setIsOfflineSaved(false);
-      success('Fiche retirée du stockage hors-ligne');
+      try {
+        await offlineStorage.removeLesson(lessonId);
+        setIsOfflineSaved(false);
+        success('Fiche retirée du stockage hors-ligne');
+      } catch {
+        error('Impossible de retirer la fiche du stockage local');
+      }
       return;
     }
 
-    if (onSaveOffline) {
-      try {
-        setIsSavingOffline(true);
+    if (!user) {
+      error('Veuillez vous connecter pour sauvegarder hors-ligne');
+      return;
+    }
+
+    if (subscription?.status !== 'ACTIVE' || !subscription?.endDate) {
+      error('Abonnement actif requis pour la sauvegarde hors-ligne');
+      openPayModal();
+      return;
+    }
+
+    try {
+      setIsSavingOffline(true);
+      if (onSaveOffline) {
         await onSaveOffline({ ...lesson, id: lessonId });
-        setIsOfflineSaved(true);
-        success('Fiche enregistrée pour consultation hors-ligne');
-      } catch (err: unknown) {
-        error(
-          err instanceof Error
-            ? err.message
-            : 'Impossible d’enregistrer la fiche hors-ligne'
+      } else {
+        // Demande autonome de jeton d'accès sécurisé
+        const accessRes = await apiClient.post(`/lessons/${lessonId}/access`);
+        const streamToken = accessRes.data?.data?.accessToken || accessRes.data?.data?.token;
+
+        if (!streamToken) {
+          throw new Error('Jeton d’accès sécurisé indisponible');
+        }
+
+        // Téléchargement du flux PDF
+        const pdfRes = await apiClient.get(`/lessons/${lessonId}/stream`, {
+          params: { token: streamToken },
+          responseType: 'blob',
+        });
+
+        if (!pdfRes.data || pdfRes.data.size === 0) {
+          throw new Error('Document PDF indisponible');
+        }
+
+        // Sauvegarde locale IndexedDB
+        await offlineStorage.saveLesson(
+          {
+            id: lessonId,
+            title: lesson.title,
+            levelId: lesson.levelId,
+            subjectId: lesson.subjectId,
+            week: lesson.week,
+            topic: lesson.topic,
+          },
+          pdfRes.data,
+          user.id,
+          subscription.endDate
         );
-      } finally {
-        setIsSavingOffline(false);
       }
+      setIsOfflineSaved(true);
+      success('Fiche enregistrée pour consultation hors-ligne');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Impossible d’enregistrer la fiche hors-ligne';
+      error(msg);
+    } finally {
+      setIsSavingOffline(false);
     }
   };
 
@@ -110,7 +200,9 @@ export const LessonCard: React.FC<LessonCardProps> = ({
           {/* Actions : Favoris & Hors-Ligne */}
           <div className="flex items-center gap-1">
             <button
+              type="button"
               onClick={handleFavoriteClick}
+              disabled={isTogglingFavorite}
               className={`p-1.5 rounded-lg transition-colors ${
                 isFavorite
                   ? 'text-secondary-600 bg-secondary-50'
@@ -119,11 +211,12 @@ export const LessonCard: React.FC<LessonCardProps> = ({
               title={isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
               aria-label="Favori"
             >
-              <Bookmark className={`w-4 h-4 ${isFavorite ? 'fill-current' : ''}`} />
+              <Bookmark className={`w-4 h-4 ${isFavorite ? 'fill-current text-secondary-600' : ''}`} />
             </button>
 
             {subscription?.status === 'ACTIVE' && (
               <button
+                type="button"
                 onClick={handleOfflineClick}
                 disabled={isSavingOffline}
                 className={`p-1.5 rounded-lg transition-colors ${
@@ -134,7 +227,13 @@ export const LessonCard: React.FC<LessonCardProps> = ({
                 title={isOfflineSaved ? 'Sauvegardée hors-ligne' : 'Sauvegarder hors-ligne'}
                 aria-label="Sauvegarde hors-ligne"
               >
-                {isOfflineSaved ? <Check className="w-4 h-4" /> : <HardDriveDownload className="w-4 h-4" />}
+                {isSavingOffline ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-primary-600" />
+                ) : isOfflineSaved ? (
+                  <Check className="w-4 h-4 text-status-success-badge" />
+                ) : (
+                  <HardDriveDownload className="w-4 h-4" />
+                )}
               </button>
             )}
           </div>
@@ -174,3 +273,4 @@ export const LessonCard: React.FC<LessonCardProps> = ({
     </div>
   );
 };
+
