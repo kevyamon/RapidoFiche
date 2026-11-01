@@ -23,12 +23,14 @@ export const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  const levelLabel =
-    typeof user?.primaryLevelId === 'object'
-      ? user.primaryLevelId.label
-        ? `${user.primaryLevelId.label} (${user.primaryLevelId.code})`
-        : user.primaryLevelId.code
-      : user?.primaryLevelId || 'Enseignant';
+  const levelLabel = (() => {
+    const lvl = user?.primaryLevelId;
+    if (!lvl) return 'Enseignant';
+    if (typeof lvl === 'object') {
+      return lvl.label ? `${lvl.label} (${lvl.code || ''})`.trim() : lvl.code || 'Enseignant';
+    }
+    return String(lvl);
+  })();
 
   const isSubActive = subscription?.status === 'ACTIVE';
 

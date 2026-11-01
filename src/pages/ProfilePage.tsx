@@ -36,10 +36,14 @@ export const ProfilePage: React.FC = () => {
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
 
-  const levelLabel =
-    typeof user?.primaryLevelId === 'object'
-      ? `${user.primaryLevelId.label} (${user.primaryLevelId.code})`
-      : user?.primaryLevelId || 'Non assigné';
+  const levelLabel = (() => {
+    const lvl = user?.primaryLevelId;
+    if (!lvl) return 'Non assigné';
+    if (typeof lvl === 'object') {
+      return lvl.label ? `${lvl.label} (${lvl.code || ''})`.trim() : lvl.code || 'Non assigné';
+    }
+    return String(lvl);
+  })();
 
   const isSubActive = subscription?.status === 'ACTIVE';
 

@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { BookOpen, UploadCloud, CheckCircle, Archive, Search, Loader2, RefreshCw, Edit3 } from 'lucide-react';
+import { BookOpen, UploadCloud, CheckCheck, Search, Loader2, RefreshCw } from 'lucide-react';
 import { apiClient } from '../../../api/client';
 import { useAdminAuth } from '../../../context/AdminAuthContext';
 import { useSocketEvent } from '../../../context/SocketContext';
 import { useToast } from '../../ui/Toast';
 import { EditLessonModal } from '../EditLessonModal';
+import { AdminLessonRow } from './AdminLessonRow';
 
 export interface AdminLessonItem {
   id: string;
@@ -25,6 +26,7 @@ export const AdminLessonsView: React.FC = () => {
   const [selectedLessonForEdit, setSelectedLessonForEdit] = useState<AdminLessonItem | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPublishingAll, setIsPublishingAll] = useState(false);
   const [actionLoading, setActionLoading] = useState<{ id: string; type: 'publish' | 'archive' } | null>(null);
   const { success, error } = useToast();
 
@@ -60,6 +62,20 @@ export const AdminLessonsView: React.FC = () => {
       error('Échec de la publication');
     } finally {
       setActionLoading(null);
+    }
+  };
+
+  const handlePublishAll = async () => {
+    try {
+      setIsPublishingAll(true);
+      const res = await apiClient.post('/admin/lessons/publish-all');
+      const count = res.data?.data?.publishedCount ?? 0;
+      success(`${count} brouillon(s) publié(s) avec succès !`);
+      await loadLessons(true);
+    } catch {
+      error('Échec de la publication groupée');
+    } finally {
+      setIsPublishingAll(false);
     }
   };
 
@@ -107,6 +123,18 @@ export const AdminLessonsView: React.FC = () => {
               className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-700 bg-slate-800 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
+          {draftCount > 0 && (
+            <button
+              type="button"
+              disabled={isPublishingAll}
+              onClick={handlePublishAll}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-lg shadow-emerald-600/20 transition-all shrink-0 disabled:opacity-50"
+              title="Publier tous les brouillons en 1 clic"
+            >
+              {isPublishingAll ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCheck className="w-4 h-4" />}
+              <span>Tout publier ({draftCount})</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setActiveTab('import')}
@@ -194,73 +222,14 @@ export const AdminLessonsView: React.FC = () => {
                 </tr>
               ) : (
                 filteredLessons.map((l) => (
-                  <tr key={l.id || l._id || l.title} className="hover:bg-slate-700/40 transition-colors">
-                    <td className="p-4">
-                      <p className="font-semibold text-white">{l.title}</p>
-                      <p className="text-xs text-slate-400">{l.subjectId?.name || 'Général'}</p>
-                    </td>
-                    <td className="p-4">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-bold bg-blue-500/10 text-blue-300 border border-blue-500/30">
-                        {l.levelId?.code || 'Tous'}
-                      </span>
-                    </td>
-                    <td className="p-4 text-slate-300 font-medium">
-                      {l.week ? `Semaine ${l.week}` : '—'}
-                    </td>
-                    <td className="p-4">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
-                          l.status === 'PUBLISHED'
-                            ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30'
-                            : l.status === 'DRAFT'
-                            ? 'bg-amber-500/10 text-amber-300 border border-amber-500/30'
-                            : 'bg-slate-700 text-slate-300 border border-slate-600'
-                        }`}
-                      >
-                        {l.status === 'PUBLISHED' ? 'Publiée' : l.status === 'DRAFT' ? 'Brouillon' : 'Archivée'}
-                      </span>
-                    </td>
-                    <td className="p-4 text-right space-x-2 whitespace-nowrap">
-                      <button
-                        type="button"
-                        onClick={() => { setSelectedLessonForEdit(l); setIsEditModalOpen(true); }}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600/20 border border-blue-500/40 text-blue-300 hover:bg-blue-600/30 text-xs font-semibold transition-colors"
-                      >
-                        <Edit3 className="w-3.5 h-3.5" />
-                        <span>Éditer</span>
-                      </button>
-                      {l.status !== 'PUBLISHED' && (
-                        <button
-                          type="button"
-                          disabled={actionLoading?.id === (l.id || l._id)}
-                          onClick={() => handlePublish(l)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600/20 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-600/30 text-xs font-semibold transition-colors disabled:opacity-50"
-                        >
-                          {actionLoading?.id === (l.id || l._id) && actionLoading?.type === 'publish' ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          ) : (
-                            <CheckCircle className="w-3.5 h-3.5" />
-                          )}
-                          <span>Publier</span>
-                        </button>
-                      )}
-                      {l.status !== 'ARCHIVED' && (
-                        <button
-                          type="button"
-                          disabled={actionLoading?.id === (l.id || l._id)}
-                          onClick={() => handleArchive(l)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-700/60 border border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white text-xs font-medium transition-colors disabled:opacity-50"
-                        >
-                          {actionLoading?.id === (l.id || l._id) && actionLoading?.type === 'archive' ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          ) : (
-                            <Archive className="w-3.5 h-3.5" />
-                          )}
-                          <span>Archiver</span>
-                        </button>
-                      )}
-                    </td>
-                  </tr>
+                  <AdminLessonRow
+                    key={l.id || l._id || l.title}
+                    lesson={l}
+                    actionLoading={actionLoading}
+                    onEdit={(item) => { setSelectedLessonForEdit(item); setIsEditModalOpen(true); }}
+                    onPublish={handlePublish}
+                    onArchive={handleArchive}
+                  />
                 ))
               )}
             </tbody>

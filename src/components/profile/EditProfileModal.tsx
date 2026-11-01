@@ -33,10 +33,11 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
       setLastName(user.lastName || '');
       setEmail(user.email || '');
       setPhone(user.phone || '');
+      const lvl = user.primaryLevelId;
       const levelId =
-        typeof user.primaryLevelId === 'object'
-          ? (user.primaryLevelId as any)._id || (user.primaryLevelId as any).id || (user.primaryLevelId as any).code
-          : user.primaryLevelId || '';
+        lvl && typeof lvl === 'object'
+          ? (lvl as any)._id || (lvl as any).id || (lvl as any).code || ''
+          : (lvl as string) || '';
       setPrimaryLevelId(levelId);
       setAvatarUrl(user.avatarUrl || '');
     }

@@ -8,8 +8,10 @@ import {
   AlertCircle,
   Loader2,
   ArrowLeft,
+  Layers,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
+import { PdfCanvasRenderer } from './PdfCanvasRenderer';
 
 export interface PdfViewerProps {
   pdfBlobUrl: string | null;
@@ -31,6 +33,8 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({
   const [zoom, setZoom] = useState<number>(100);
   const [rotation, setRotation] = useState<number>(0);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+  const [totalPages, setTotalPages] = useState<number>(0);
+  const [renderError, setRenderError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Gestion du plein écran natif
@@ -56,16 +60,15 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({
     };
   }, []);
 
-  // Blocage global des raccourcis de téléchargement, impression et capture
+  // Blocage global des raccourcis d'impression et de capture
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
       const isCmdOrCtrl = isMac ? e.metaKey : e.ctrlKey;
 
       if (
-        (isCmdOrCtrl && (e.key === 'p' || e.key === 'P' || e.key === 's' || e.key === 'S' || e.key === 'u' || e.key === 'U')) ||
-        e.key === 'F12' ||
-        (isCmdOrCtrl && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'C' || e.key === 'c' || e.key === 'J' || e.key === 'j'))
+        (isCmdOrCtrl && (e.key === 'p' || e.key === 'P' || e.key === 's' || e.key === 'S')) ||
+        e.key === 'F12'
       ) {
         e.preventDefault();
         e.stopPropagation();
@@ -82,29 +85,15 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({
   const handleZoomOut = () => setZoom((prev) => Math.max(prev - 20, 60));
   const handleRotate = () => setRotation((prev) => (prev + 90) % 360);
 
-  // Protection contre le clic droit
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
   };
-
-  const [isDocumentLoaded, setIsDocumentLoaded] = useState<boolean>(false);
-
-  useEffect(() => {
-    if (!pdfBlobUrl) {
-      setIsDocumentLoaded(false);
-      return;
-    }
-    const timer = setTimeout(() => {
-      setIsDocumentLoaded(true);
-    }, 800);
-    return () => clearTimeout(timer);
-  }, [pdfBlobUrl]);
 
   return (
     <div
       ref={containerRef}
       onContextMenu={handleContextMenu}
-      className="flex flex-col h-[calc(100vh-8rem)] sm:h-[82vh] bg-background-surface rounded-2xl border border-border-default shadow-card overflow-hidden select-none"
+      className="flex flex-col h-[calc(100vh-8rem)] sm:h-[84vh] bg-slate-900/50 rounded-2xl border border-border-default shadow-card overflow-hidden select-none"
     >
       {/* Barre d'Outils Supérieure */}
       <div className="flex items-center justify-between px-3 sm:px-5 py-3 bg-background-card border-b border-border-default shrink-0 gap-2">
@@ -120,9 +109,15 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({
               <ArrowLeft className="w-5 h-5" />
             </Button>
           )}
-          <h2 className="text-sm sm:text-base font-semibold text-text-primary truncate max-w-[200px] sm:max-w-md">
+          <h2 className="text-sm sm:text-base font-semibold text-text-primary truncate max-w-[160px] sm:max-w-md">
             {title}
           </h2>
+          {totalPages > 0 && (
+            <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-primary-50 text-primary-700 border border-primary-200">
+              <Layers className="w-3 h-3" />
+              <span>{totalPages} page{totalPages > 1 ? 's' : ''}</span>
+            </span>
+          )}
         </div>
 
         {/* Contrôles de Visionnage */}
@@ -173,61 +168,40 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({
       </div>
 
       {/* Zone d'Affichage du Document */}
-      <div className="flex-1 overflow-auto bg-slate-100 flex items-center justify-center p-2 sm:p-4 relative">
-        {(isLoading || (!isDocumentLoaded && !!pdfBlobUrl)) && (
+      <div className="flex-1 overflow-y-auto bg-slate-100 p-2 sm:p-4 relative">
+        {isLoading && (
           <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-slate-100/90 backdrop-blur-xs text-text-muted">
             <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
-            <p className="text-xs sm:text-sm font-medium">Chargement sécurisé de la fiche...</p>
+            <p className="text-xs sm:text-sm font-medium">Chargement du document pédagogique...</p>
           </div>
         )}
 
-        {error && (
-          <div className="flex flex-col items-center gap-3 text-status-danger-text p-6 bg-status-danger-bg rounded-xl border border-status-danger-border max-w-sm text-center">
+        {(error || renderError) && (
+          <div className="flex flex-col items-center gap-3 text-status-danger-text p-6 bg-status-danger-bg rounded-xl border border-status-danger-border max-w-sm text-center mx-auto my-8">
             <AlertCircle className="w-8 h-8 text-status-danger-badge" />
-            <p className="text-sm font-semibold">{error}</p>
+            <p className="text-sm font-semibold">{error || renderError}</p>
           </div>
         )}
 
         {!error && pdfBlobUrl && (
-          <div
-            className="w-full h-full flex items-center justify-center transition-transform duration-200 relative"
-            style={{
-              transform: `scale(${zoom / 100}) rotate(${rotation}deg)`,
-              transformOrigin: 'center center',
-            }}
-          >
+          <div className="w-full">
             {/* Style pour interdire strictement l'impression */}
             <style>
               {`@media print { body, html, #root { display: none !important; visibility: hidden !important; } }`}
             </style>
 
-            <iframe
-              src={`${pdfBlobUrl}#toolbar=0&navpanes=0&scrollbar=1`}
-              title={title}
-              onLoad={() => setIsDocumentLoaded(true)}
-              className={`w-full h-full rounded-lg bg-white shadow-card border border-border-default transition-opacity duration-300 ${
-                isDocumentLoaded ? 'opacity-100' : 'opacity-0'
-              }`}
+            <PdfCanvasRenderer
+              pdfBlobUrl={pdfBlobUrl}
+              zoom={zoom}
+              rotation={rotation}
+              watermarkText={watermarkText}
+              onLoaded={(count) => setTotalPages(count)}
+              onError={(msg) => setRenderError(msg)}
             />
-
-            {/* Filigrane Dynamique Anti-Capture / Anti-Fuite */}
-            <div
-              className="absolute inset-0 pointer-events-none flex flex-col justify-around items-center opacity-[0.06] overflow-hidden select-none z-10"
-              aria-hidden="true"
-            >
-              <div className="text-lg sm:text-xl font-black text-text-primary -rotate-45 tracking-widest uppercase text-center px-4 whitespace-nowrap">
-                {watermarkText}
-              </div>
-              <div className="text-lg sm:text-xl font-black text-text-primary -rotate-45 tracking-widest uppercase text-center px-4 whitespace-nowrap">
-                {watermarkText}
-              </div>
-              <div className="text-lg sm:text-xl font-black text-text-primary -rotate-45 tracking-widest uppercase text-center px-4 whitespace-nowrap">
-                {watermarkText}
-              </div>
-            </div>
           </div>
         )}
       </div>
     </div>
   );
 };
+

@@ -59,6 +59,14 @@
       rel="stylesheet"
     />
 
+    <!-- Moteur de Rendu PDF Universel Mobile & PWA -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+      if (typeof window !== 'undefined' && window.pdfjsLib) {
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      }
+    </script>
+
     <!-- Données structurées Schema.org JSON-LD pour Google Search Console -->
     <script type="application/ld+json">
       {

@@ -30,12 +30,14 @@ export const HomePage: React.FC = () => {
   const [recentLessons, setRecentLessons] = useState<LessonSummary[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  const levelCode =
-    typeof user?.primaryLevelId === 'object'
-      ? user.primaryLevelId?.label
-        ? `${user.primaryLevelId.label} (${user.primaryLevelId.code})`
-        : user.primaryLevelId.code
-      : user?.primaryLevelId || 'Votre Classe';
+  const levelCode = (() => {
+    const lvl = user?.primaryLevelId;
+    if (!lvl) return 'Votre Classe';
+    if (typeof lvl === 'object') {
+      return lvl.label ? `${lvl.label} (${lvl.code || ''})`.trim() : lvl.code || 'Votre Classe';
+    }
+    return String(lvl);
+  })();
 
   useEffect(() => {
     const fetchDashboardData = async () => {
