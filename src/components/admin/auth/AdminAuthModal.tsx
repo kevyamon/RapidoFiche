@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useAdminAuth } from '../../../context/AdminAuthContext';
 import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 import { AdminLoginForm } from './AdminLoginForm';
@@ -21,12 +22,15 @@ export const AdminAuthModal: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isAuthModalOpen, closeAuthModal]);
 
-  if (!isAuthModalOpen) return null;
+  if (!isAuthModalOpen || typeof document === 'undefined') return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fade-in">
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fade-in overflow-y-auto"
+      style={{ minHeight: '100dvh' }}
+    >
       <div
-        className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden"
+        className="relative w-full max-w-md my-auto bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden text-left"
         onClick={(e) => e.stopPropagation()}
       >
         {/* En-tête Furtif */}
@@ -85,6 +89,7 @@ export const AdminAuthModal: React.FC = () => {
           {tab === 'login' ? <AdminLoginForm /> : <AdminRegisterForm />}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

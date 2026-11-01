@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { useModalBackHandler } from '../../hooks/useModalBackHandler';
 
@@ -41,7 +42,7 @@ export const Modal: React.FC<ModalProps> = ({
     }
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen || typeof document === 'undefined') return null;
 
   const maxWidthClass = {
     sm: 'max-w-sm',
@@ -50,17 +51,21 @@ export const Modal: React.FC<ModalProps> = ({
     xl: 'max-w-xl',
   }[maxWidth];
 
-  return (
-    <div className="fixed inset-0 z-[1200] flex items-center justify-center p-4 animate-in fade-in duration-200">
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 overflow-y-auto"
+      style={{ minHeight: '100dvh' }}
+    >
       {/* Arrière-plan flouté */}
       <div
-        className="fixed inset-0 bg-text-primary/40 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 bg-text-primary/50 backdrop-blur-sm transition-opacity"
         onClick={onClose}
+        aria-hidden="true"
       />
 
-      {/* Conteneur Modale */}
+      {/* Conteneur Modale centré */}
       <div
-        className={`relative bg-background-card w-full ${maxWidthClass} rounded-2xl shadow-modal border border-border-default z-10 overflow-hidden animate-in zoom-in-95 duration-200`}
+        className={`relative bg-background-card w-full ${maxWidthClass} my-auto rounded-2xl shadow-modal border border-border-default z-10 overflow-hidden animate-in zoom-in-95 duration-200 text-left`}
         role="dialog"
         aria-modal="true"
       >
@@ -90,6 +95,8 @@ export const Modal: React.FC<ModalProps> = ({
         {/* Corps */}
         <div className="p-5 max-h-[80vh] overflow-y-auto">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
+

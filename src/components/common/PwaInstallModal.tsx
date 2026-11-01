@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { Download, X, Smartphone, Zap, WifiOff, Share, PlusSquare, ShieldCheck } from 'lucide-react';
 import { usePwaInstall } from '../../hooks/usePwaInstall';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
@@ -8,7 +9,7 @@ export const PwaInstallModal: React.FC = () => {
 
   useBodyScrollLock(isModalOpen);
 
-  if (!isModalOpen || isInstalled) return null;
+  if (!isModalOpen || isInstalled || typeof document === 'undefined') return null;
 
   const handleInstallClick = async () => {
     if (isIos) {
@@ -18,14 +19,15 @@ export const PwaInstallModal: React.FC = () => {
     await promptInstall();
   };
 
-  return (
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="pwa-install-title"
-      className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fade-in text-left"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fade-in text-left overflow-y-auto"
+      style={{ minHeight: '100dvh' }}
     >
-      <div className="relative w-full max-w-sm sm:max-w-md bg-background-card rounded-2xl sm:rounded-3xl border border-border-default shadow-elevated overflow-hidden animate-scale-up">
+      <div className="relative w-full max-w-sm sm:max-w-md my-auto bg-background-card rounded-2xl sm:rounded-3xl border border-border-default shadow-elevated overflow-hidden animate-scale-up">
         {/* Bouton Fermer */}
         <button
           type="button"
@@ -135,6 +137,7 @@ export const PwaInstallModal: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
