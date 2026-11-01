@@ -65,10 +65,8 @@ export const PdfCanvasRenderer: React.FC<PdfCanvasRendererProps> = ({
   onError,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [pagesCount, setPagesCount] = useState<number>(0);
   const [isRendering, setIsRendering] = useState<boolean>(true);
   const [renderError, setRenderError] = useState<string | null>(null);
-  const pdfDocRef = useRef<any>(null);
 
   const renderPages = useCallback(async (pdfDoc: any) => {
     if (!containerRef.current) return;
@@ -76,7 +74,6 @@ export const PdfCanvasRenderer: React.FC<PdfCanvasRendererProps> = ({
     container.innerHTML = '';
 
     const numPages = pdfDoc.numPages;
-    setPagesCount(numPages);
     if (onLoaded) onLoaded(numPages);
 
     const containerWidth = Math.max(container.clientWidth - 24, 280);
@@ -143,7 +140,6 @@ export const PdfCanvasRenderer: React.FC<PdfCanvasRendererProps> = ({
 
         const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
         const pdfDoc = await loadingTask.promise;
-        pdfDocRef.current = pdfDoc;
 
         if (!isCancelled) {
           await renderPages(pdfDoc);
