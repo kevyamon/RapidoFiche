@@ -35,9 +35,10 @@ export const ProfilePaymentsHistory: React.FC<ProfilePaymentsHistoryProps> = ({
 
   const handleConfirmDeleteSingle = async () => {
     if (!targetPayment || !onDelete) return;
+    const paymentId = targetPayment.id || (targetPayment as any)._id || targetPayment.reference;
     try {
       setIsDeleting(true);
-      await onDelete(targetPayment.id);
+      await onDelete(paymentId);
       setTargetPayment(null);
     } finally {
       setIsDeleting(false);
@@ -80,10 +81,15 @@ export const ProfilePaymentsHistory: React.FC<ProfilePaymentsHistoryProps> = ({
           const isPending = p.status === 'PENDING' || p.status === 'CREATED';
 
           return (
-            <div key={p.id} className="py-3 flex items-center justify-between text-xs sm:text-sm">
-              <div>
-                <p className="font-semibold text-text-primary">Réf : {p.reference}</p>
-                <p className="text-xs text-text-muted">
+            <div
+              key={p.id || (p as any)._id || p.reference}
+              className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs sm:text-sm"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold text-text-primary truncate">
+                  Réf : {p.reference}
+                </p>
+                <p className="text-[11px] sm:text-xs text-text-muted mt-0.5">
                   {new Date(p.createdAt).toLocaleDateString('fr-FR', {
                     day: 'numeric',
                     month: 'long',
@@ -91,11 +97,12 @@ export const ProfilePaymentsHistory: React.FC<ProfilePaymentsHistoryProps> = ({
                   })}
                 </p>
               </div>
-              <div className="flex items-center gap-2 sm:gap-3 text-right">
-                <div>
+
+              <div className="flex items-center justify-between sm:justify-end gap-2.5 shrink-0">
+                <div className="text-left sm:text-right shrink-0">
                   <p className="font-bold text-text-primary">{p.amount} FCFA</p>
                   <span
-                    className={`text-[11px] font-medium ${
+                    className={`text-[11px] font-semibold ${
                       isPaid
                         ? 'text-status-success-text'
                         : isPending
@@ -107,30 +114,32 @@ export const ProfilePaymentsHistory: React.FC<ProfilePaymentsHistoryProps> = ({
                   </span>
                 </div>
 
-                {isPending && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onVerify(p.reference)}
-                    isLoading={verifyingId === p.reference}
-                    leftIcon={<RotateCw className="w-3.5 h-3.5" />}
-                    className="text-xs py-1 px-2 h-7"
-                  >
-                    Vérifier
-                  </Button>
-                )}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {isPending && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onVerify(p.reference)}
+                      isLoading={verifyingId === p.reference}
+                      leftIcon={<RotateCw className="w-3.5 h-3.5" />}
+                      className="text-xs py-1 px-2.5 h-7"
+                    >
+                      Vérifier
+                    </Button>
+                  )}
 
-                {onDelete && (
-                  <button
-                    type="button"
-                    onClick={() => setTargetPayment(p)}
-                    className="p-1.5 rounded-lg text-text-muted hover:text-status-danger-badge hover:bg-status-danger-bg transition-colors ml-1"
-                    title="Supprimer cette transaction"
-                    aria-label={`Supprimer la transaction ${p.reference}`}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                )}
+                  {onDelete && (
+                    <button
+                      type="button"
+                      onClick={() => setTargetPayment(p)}
+                      className="p-1.5 rounded-lg text-text-muted hover:text-status-danger-badge hover:bg-status-danger-bg transition-colors shrink-0"
+                      title="Supprimer cette transaction"
+                      aria-label={`Supprimer la transaction ${p.reference}`}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           );

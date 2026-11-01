@@ -31,6 +31,16 @@ export const Modal: React.FC<ModalProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
+  useEffect(() => {
+    if (isOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const maxWidthClass = {
@@ -41,7 +51,7 @@ export const Modal: React.FC<ModalProps> = ({
   }[maxWidth];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[1200] flex items-center justify-center p-4 animate-in fade-in duration-200">
       {/* Arrière-plan flouté */}
       <div
         className="fixed inset-0 bg-text-primary/40 backdrop-blur-sm transition-opacity"
@@ -50,7 +60,7 @@ export const Modal: React.FC<ModalProps> = ({
 
       {/* Conteneur Modale */}
       <div
-        className={`relative bg-background-card w-full ${maxWidthClass} rounded-t-2xl sm:rounded-xl shadow-modal border border-border-default z-10 overflow-hidden animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200`}
+        className={`relative bg-background-card w-full ${maxWidthClass} rounded-2xl shadow-modal border border-border-default z-10 overflow-hidden animate-in zoom-in-95 duration-200`}
         role="dialog"
         aria-modal="true"
       >
