@@ -1,13 +1,14 @@
 import React from 'react';
-import { Edit3, CheckCircle, Archive, Loader2 } from 'lucide-react';
+import { Edit3, CheckCircle, Archive, Trash2, Loader2 } from 'lucide-react';
 import { AdminLessonItem } from './AdminLessonsView';
 
 interface AdminLessonRowProps {
   lesson: AdminLessonItem;
-  actionLoading: { id: string; type: 'publish' | 'archive' } | null;
+  actionLoading: { id: string; type: 'publish' | 'archive' | 'delete' } | null;
   onEdit: (lesson: AdminLessonItem) => void;
   onPublish: (lesson: AdminLessonItem) => void;
   onArchive: (lesson: AdminLessonItem) => void;
+  onDelete: (lesson: AdminLessonItem) => void;
 }
 
 export const AdminLessonRow: React.FC<AdminLessonRowProps> = ({
@@ -16,6 +17,7 @@ export const AdminLessonRow: React.FC<AdminLessonRowProps> = ({
   onEdit,
   onPublish,
   onArchive,
+  onDelete,
 }) => {
   const lessonId = l.id || l._id || '';
 
@@ -85,6 +87,20 @@ export const AdminLessonRow: React.FC<AdminLessonRowProps> = ({
             <span>Archiver</span>
           </button>
         )}
+        <button
+          type="button"
+          disabled={actionLoading?.id === lessonId}
+          onClick={() => onDelete(l)}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-950/40 border border-red-800/50 text-red-300 hover:bg-red-900/60 hover:text-red-200 text-xs font-semibold transition-colors disabled:opacity-50"
+          title="Supprimer définitivement"
+        >
+          {actionLoading?.id === lessonId && actionLoading?.type === 'delete' ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <Trash2 className="w-3.5 h-3.5" />
+          )}
+          <span>Supprimer</span>
+        </button>
       </td>
     </tr>
   );

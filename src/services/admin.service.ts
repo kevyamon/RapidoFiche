@@ -18,6 +18,12 @@ export interface AdminUserItem {
   role: string;
   primaryLevelId?: { id: string; code: string; label: string };
   status: 'ACTIVE' | 'SUSPENDED' | 'DELETED';
+  subscription?: {
+    status: 'ACTIVE' | 'EXPIRED' | 'PENDING' | 'NONE' | string;
+    startDate?: string;
+    endDate?: string;
+    daysRemaining?: number;
+  };
   createdAt: string;
 }
 
@@ -118,5 +124,9 @@ export class AdminService {
 
   public static async archiveLesson(lessonId: string): Promise<void> {
     await apiClient.patch(`/admin/lessons/${lessonId}/archive`);
+  }
+
+  public static async deleteLessonPermanently(lessonId: string): Promise<void> {
+    await apiClient.delete(`/admin/lessons/${lessonId}`);
   }
 }
