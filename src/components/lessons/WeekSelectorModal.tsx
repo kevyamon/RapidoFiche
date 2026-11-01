@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { CalendarDays, CheckCircle2, X } from 'lucide-react';
 import { useModalBackHandler } from '../../hooks/useModalBackHandler';
 
@@ -18,7 +19,27 @@ export const WeekSelectorModal: React.FC<WeekSelectorModalProps> = ({
   const [activeTab, setActiveTab] = useState<'ALL' | 'T1' | 'T2' | 'T3'>('ALL');
   useModalBackHandler(isOpen, onClose, 'week-selector-modal');
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
+  useEffect(() => {
+    if (isOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isOpen]);
+
+  if (!isOpen || typeof document === 'undefined') return null;
 
   const getWeeksForTab = () => {
     switch (activeTab) {
@@ -36,18 +57,28 @@ export const WeekSelectorModal: React.FC<WeekSelectorModalProps> = ({
 
   const weeks = getWeeksForTab();
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-150">
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 overflow-y-auto"
+      style={{ minHeight: '100dvh' }}
+    >
+      {/* Arrière-plan flouté */}
       <div
-        className="fixed inset-0 bg-text-primary/40 backdrop-blur-sm"
+        className="fixed inset-0 bg-text-primary/50 backdrop-blur-sm transition-opacity"
         onClick={onClose}
+        aria-hidden="true"
       />
 
-      <div className="relative bg-background-card w-full max-w-lg rounded-t-2xl sm:rounded-2xl shadow-modal border border-border-default z-10 max-h-[85vh] flex flex-col animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200 overflow-hidden">
+      {/* Conteneur Modale centré */}
+      <div
+        className="relative bg-background-card w-full max-w-lg my-auto rounded-2xl shadow-modal border border-border-default z-10 max-h-[85vh] flex flex-col animate-in zoom-in-95 duration-200 overflow-hidden text-left"
+        role="dialog"
+        aria-modal="true"
+      >
         {/* En-tête */}
         <div className="flex items-center justify-between p-4 sm:p-5 border-b border-border-default bg-background-main/50">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-primary-100 text-primary-700 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl bg-primary-100 text-primary-700 flex items-center justify-center shrink-0">
               <CalendarDays className="w-5 h-5" />
             </div>
             <div>
@@ -60,7 +91,7 @@ export const WeekSelectorModal: React.FC<WeekSelectorModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 text-text-muted hover:text-text-primary rounded-lg hover:bg-background-surface transition-colors"
+            className="p-1.5 text-text-muted hover:text-text-primary rounded-lg hover:bg-background-surface transition-colors ml-4"
             aria-label="Fermer"
           >
             <X className="w-5 h-5" />
@@ -142,6 +173,7 @@ export const WeekSelectorModal: React.FC<WeekSelectorModalProps> = ({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

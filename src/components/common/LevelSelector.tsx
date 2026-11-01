@@ -1,17 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { GraduationCap, ChevronDown, CheckCircle2, School, X } from 'lucide-react';
 import { apiClient } from '../../api/client';
 import { useModalBackHandler } from '../../hooks/useModalBackHandler';
 
 export interface EducationLevelItem {
   id: string;
-  _id?: string;
   code: string;
   label: string;
   order: number;
 }
 
-// Les 6 niveaux officiels du primaire (CP1 au CM2)
 const DEFAULT_LEVELS: EducationLevelItem[] = [
   { id: 'CP1', code: 'CP1', label: 'Cours Préparatoire 1ère année', order: 1 },
   { id: 'CP2', code: 'CP2', label: 'Cours Préparatoire 2ème année', order: 2 },
@@ -31,13 +30,33 @@ export interface LevelSelectorProps {
 export const LevelSelector: React.FC<LevelSelectorProps> = ({
   value,
   onChange,
-  label = 'Classe / Niveau d’enseignement principal',
+  label = "Classe / Niveau d'enseignement principal",
   required = true,
 }) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [levels, setLevels] = useState<EducationLevelItem[]>(DEFAULT_LEVELS);
 
   useModalBackHandler(isOpen, () => setIsOpen(false), 'level-selector-modal');
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        setIsOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     const fetchLevels = async () => {
@@ -105,18 +124,28 @@ export const LevelSelector: React.FC<LevelSelectorProps> = ({
       </button>
 
       {/* Modale Personnalisée des 6 Niveaux du Primaire */}
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-150">
+      {isOpen && typeof document !== 'undefined' && createPortal(
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 overflow-y-auto"
+          style={{ minHeight: '100dvh' }}
+        >
+          {/* Arrière-plan flouté */}
           <div
-            className="fixed inset-0 bg-text-primary/40 backdrop-blur-sm"
+            className="fixed inset-0 bg-text-primary/50 backdrop-blur-sm transition-opacity"
             onClick={() => setIsOpen(false)}
+            aria-hidden="true"
           />
 
-          <div className="relative bg-background-card w-full max-w-lg rounded-t-2xl sm:rounded-2xl shadow-modal border border-border-default z-10 max-h-[85vh] flex flex-col animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200 overflow-hidden">
+          {/* Conteneur Modale centré */}
+          <div
+            className="relative bg-background-card w-full max-w-lg my-auto rounded-2xl shadow-modal border border-border-default z-10 max-h-[85vh] flex flex-col animate-in zoom-in-95 duration-200 overflow-hidden text-left"
+            role="dialog"
+            aria-modal="true"
+          >
             {/* En-tête */}
             <div className="flex items-center justify-between p-4 sm:p-5 border-b border-border-default bg-background-main/50">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-primary-100 text-primary-700 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-xl bg-primary-100 text-primary-700 flex items-center justify-center shrink-0">
                   <School className="w-5 h-5" />
                 </div>
                 <div>
@@ -131,7 +160,7 @@ export const LevelSelector: React.FC<LevelSelectorProps> = ({
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="p-1.5 text-text-muted hover:text-text-primary rounded-lg hover:bg-background-surface transition-colors"
+                className="p-1.5 text-text-muted hover:text-text-primary rounded-lg hover:bg-background-surface transition-colors ml-4"
                 aria-label="Fermer"
               >
                 <X className="w-5 h-5" />
@@ -177,7 +206,8 @@ export const LevelSelector: React.FC<LevelSelectorProps> = ({
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

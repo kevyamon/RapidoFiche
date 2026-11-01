@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Calendar, CheckCircle2, X } from 'lucide-react';
 import { useModalBackHandler } from '../../hooks/useModalBackHandler';
 
@@ -10,7 +11,7 @@ export interface TermSelectorModalProps {
 }
 
 const TERMS = [
-  { value: '', label: 'Tous les trimestres', subtitle: 'Afficher l’ensemble de l’année scolaire' },
+  { value: '', label: 'Tous les trimestres', subtitle: "Afficher l'ensemble de l'année scolaire" },
   { value: '1', label: 'Trimestre 1', subtitle: 'Semaines 1 à 12' },
   { value: '2', label: 'Trimestre 2', subtitle: 'Semaines 13 à 24' },
   { value: '3', label: 'Trimestre 3', subtitle: 'Semaines 25 à 36' },
@@ -24,20 +25,50 @@ export const TermSelectorModal: React.FC<TermSelectorModalProps> = ({
 }) => {
   useModalBackHandler(isOpen, onClose, 'term-selector-modal');
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-150">
+  useEffect(() => {
+    if (isOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isOpen]);
+
+  if (!isOpen || typeof document === 'undefined') return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 overflow-y-auto"
+      style={{ minHeight: '100dvh' }}
+    >
+      {/* Arrière-plan flouté */}
       <div
-        className="fixed inset-0 bg-text-primary/40 backdrop-blur-sm"
+        className="fixed inset-0 bg-text-primary/50 backdrop-blur-sm transition-opacity"
         onClick={onClose}
+        aria-hidden="true"
       />
 
-      <div className="relative bg-background-card w-full max-w-md rounded-t-2xl sm:rounded-2xl shadow-modal border border-border-default z-10 max-h-[85vh] flex flex-col animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200 overflow-hidden">
+      {/* Conteneur Modale centré */}
+      <div
+        className="relative bg-background-card w-full max-w-md my-auto rounded-2xl shadow-modal border border-border-default z-10 max-h-[85vh] flex flex-col animate-in zoom-in-95 duration-200 overflow-hidden text-left"
+        role="dialog"
+        aria-modal="true"
+      >
         {/* En-tête */}
         <div className="flex items-center justify-between p-4 sm:p-5 border-b border-border-default bg-background-main/50">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-primary-100 text-primary-700 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl bg-primary-100 text-primary-700 flex items-center justify-center shrink-0">
               <Calendar className="w-5 h-5" />
             </div>
             <div>
@@ -50,7 +81,7 @@ export const TermSelectorModal: React.FC<TermSelectorModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 text-text-muted hover:text-text-primary rounded-lg hover:bg-background-surface transition-colors"
+            className="p-1.5 text-text-muted hover:text-text-primary rounded-lg hover:bg-background-surface transition-colors ml-4"
             aria-label="Fermer"
           >
             <X className="w-5 h-5" />
@@ -89,6 +120,7 @@ export const TermSelectorModal: React.FC<TermSelectorModalProps> = ({
           })}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
