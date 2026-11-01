@@ -79,6 +79,26 @@ export const ProfilePage: React.FC = () => {
     }
   };
 
+  const handleDeletePayment = async (paymentId: string) => {
+    try {
+      await apiClient.delete(`/me/payments/${paymentId}`);
+      success('Transaction supprimée avec succès');
+      await fetchPayments();
+    } catch {
+      toastError('Impossible de supprimer la transaction');
+    }
+  };
+
+  const handleClearPayments = async () => {
+    try {
+      await apiClient.delete('/me/payments');
+      success('Historique des paiements vidé');
+      await fetchPayments();
+    } catch {
+      toastError("Impossible de vider l'historique");
+    }
+  };
+
   const handleLogout = async () => {
     await logout();
     navigate('/connexion');
@@ -214,6 +234,8 @@ export const ProfilePage: React.FC = () => {
         payments={payments}
         onVerify={handleVerify}
         verifyingId={verifyingId}
+        onDelete={handleDeletePayment}
+        onClearAll={handleClearPayments}
       />
 
       {/* 4. Déconnexion */}
